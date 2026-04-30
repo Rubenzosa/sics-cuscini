@@ -5,7 +5,6 @@ import { calcolaStato, statoLabel, giorniAllaScadenza } from "../utils";
 export default function Dashboard({ kits }) {
   const navigate = useNavigate();
 
-  const totali = kits.length;
   const scaduti  = kits.filter(k => calcolaStato(k) === "scaduto").length;
   const critici  = kits.filter(k => calcolaStato(k) === "critico").length;
   const attenzione = kits.filter(k => calcolaStato(k) === "attenzione").length;
