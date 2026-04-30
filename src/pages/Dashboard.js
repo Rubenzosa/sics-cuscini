@@ -6,12 +6,13 @@ export default function Dashboard({ kits }) {
   const navigate = useNavigate();
 
   const totali = kits.length;
-  const scaduti = kits.filter(k => calcolaStato(k) === "scaduto").length;
-  const inScadenza = kits.filter(k => calcolaStato(k) === "in_scadenza").length;
-  const regolari = kits.filter(k => calcolaStato(k) === "regolare").length;
+  const scaduti  = kits.filter(k => calcolaStato(k) === "scaduto").length;
+  const critici  = kits.filter(k => calcolaStato(k) === "critico").length;
+  const attenzione = kits.filter(k => calcolaStato(k) === "attenzione").length;
+  const buoni    = kits.filter(k => ["buono","regolare"].includes(calcolaStato(k))).length;
 
-  const critici = kits
-    .filter(k => ["scaduto", "in_scadenza"].includes(calcolaStato(k)))
+  const urgenti = kits
+    .filter(k => ["scaduto","critico","attenzione"].includes(calcolaStato(k)))
     .sort((a, b) => {
       const ga = giorniAllaScadenza(a.dataRevisione) ?? 9999;
       const gb = giorniAllaScadenza(b.dataRevisione) ?? 9999;
@@ -31,19 +32,19 @@ export default function Dashboard({ kits }) {
       <div className="stats-row">
         <div className="stat-card">
           <div className="stat-label">Kit totali</div>
-          <div className="stat-num blue">{totali}</div>
+          <div className="stat-num blue">{kits.length}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Scaduti</div>
-          <div className="stat-num red">{scaduti}</div>
+          <div className="stat-label">Scaduti / entro 3 mesi</div>
+          <div className="stat-num red">{scaduti + critici}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">In scadenza (60gg)</div>
-          <div className="stat-num amber">{inScadenza}</div>
+          <div className="stat-label">Scade quest'anno</div>
+          <div className="stat-num amber">{attenzione}</div>
         </div>
         <div className="stat-card">
-          <div className="stat-label">Regolari</div>
-          <div className="stat-num green">{regolari}</div>
+          <div className="stat-label">In regola</div>
+          <div className="stat-num green">{buoni}</div>
         </div>
       </div>
 
@@ -53,10 +54,10 @@ export default function Dashboard({ kits }) {
             <span className="card-title">Scadenze critiche</span>
             <button className="card-action" onClick={() => navigate("/scadenze")}>Vedi tutte →</button>
           </div>
-          {critici.length === 0 ? (
+          {urgenti.length === 0 ? (
             <p style={{ color: "#888", fontSize: 13 }}>Nessuna scadenza critica. Ottimo!</p>
           ) : (
-            critici.map(kit => {
+            urgenti.map(kit => {
               const stato = calcolaStato(kit);
               const giorni = giorniAllaScadenza(kit.dataRevisione);
               return (

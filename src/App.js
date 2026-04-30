@@ -33,7 +33,7 @@ export default function App() {
 
   const critici = kits.filter(k => {
     const s = calcolaStato(k);
-    return s === "scaduto" || s === "in_scadenza";
+    return s === "scaduto" || s === "critico" || s === "attenzione";
   }).length;
 
   return (

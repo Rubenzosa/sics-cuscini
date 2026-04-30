@@ -112,12 +112,14 @@ body {
   border-radius: 20px;
   white-space: nowrap;
 }
-.pill.scaduto { background: #fcebeb; color: #a32d2d; }
-.pill.in_scadenza { background: #faeeda; color: #854f0b; }
-.pill.regolare { background: #eaf3de; color: #3b6d11; }
+.pill.scaduto      { background: #fcebeb; color: #a32d2d; }
+.pill.critico      { background: #fcebeb; color: #a32d2d; border: 1px solid #f7c1c1; }
+.pill.attenzione   { background: #faeeda; color: #854f0b; }
+.pill.buono        { background: #eaf3de; color: #3b6d11; }
+.pill.regolare     { background: #eaf3de; color: #3b6d11; }
 .pill.fuori_servizio { background: #f1efe8; color: #5f5e5a; }
-.pill.magazzino { background: #e6f1fb; color: #185fa5; }
-.pill.senza_data { background: #f1efe8; color: #5f5e5a; }
+.pill.magazzino    { background: #e6f1fb; color: #185fa5; }
+.pill.senza_data   { background: #f1efe8; color: #5f5e5a; }
 
 /* BUTTONS */
 .btn {
@@ -211,11 +213,13 @@ tr:hover td { background: #fafbfc; }
 
 /* DOT INDICATORS */
 .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
-.dot.scaduto { background: #e24b4a; }
-.dot.in_scadenza { background: #ba7517; }
-.dot.regolare { background: #639922; }
-.dot.fuori_servizio { background: #888780; }
-.dot.magazzino { background: #378add; }
+.dot.scaduto       { background: #e24b4a; }
+.dot.critico       { background: #e24b4a; }
+.dot.attenzione    { background: #ba7517; }
+.dot.buono         { background: #639922; }
+.dot.regolare      { background: #639922; }
+.dot.fuori_servizio{ background: #888780; }
+.dot.magazzino     { background: #378add; }
 
 /* PAGE HEADERS */
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }

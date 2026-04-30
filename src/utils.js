@@ -5,33 +5,41 @@ export function calcolaStato(kit) {
 
   const oggi = new Date();
   const revisione = new Date(kit.dataRevisione);
+  const annoOggi = oggi.getFullYear();
+  const annoRevisione = revisione.getFullYear();
   const diffGiorni = Math.floor((revisione - oggi) / (1000 * 60 * 60 * 24));
 
   if (diffGiorni < 0) return "scaduto";
-  if (diffGiorni <= 60) return "in_scadenza";
+  if (diffGiorni <= 90) return "critico";
+  if (annoRevisione === annoOggi) return "attenzione";
+  if (annoRevisione === annoOggi + 1) return "buono";
   return "regolare";
 }
 
 export function statoLabel(stato) {
   const map = {
-    scaduto: "Scaduto",
-    in_scadenza: "In scadenza",
-    regolare: "Regolare",
+    scaduto:      "Scaduto",
+    critico:      "Scade entro 3 mesi",
+    attenzione:   "Scade quest'anno",
+    buono:        "Scade l'anno prossimo",
+    regolare:     "Regolare",
     fuori_servizio: "Fuori servizio",
-    magazzino: "Magazzino",
-    senza_data: "N/D",
+    magazzino:    "Magazzino",
+    senza_data:   "N/D",
   };
   return map[stato] || stato;
 }
 
 export function statoColore(stato) {
   const map = {
-    scaduto: { bg: "#fcebeb", text: "#a32d2d", dot: "#e24b4a" },
-    in_scadenza: { bg: "#faeeda", text: "#854f0b", dot: "#ba7517" },
-    regolare: { bg: "#eaf3de", text: "#3b6d11", dot: "#639922" },
-    fuori_servizio: { bg: "#f1efe8", text: "#5f5e5a", dot: "#888780" },
-    magazzino: { bg: "#e6f1fb", text: "#185fa5", dot: "#378add" },
-    senza_data: { bg: "#f1efe8", text: "#5f5e5a", dot: "#888780" },
+    scaduto:      { bg: "#fcebeb", text: "#a32d2d", dot: "#e24b4a", css: "scaduto"    },
+    critico:      { bg: "#fcebeb", text: "#a32d2d", dot: "#e24b4a", css: "critico"    },
+    attenzione:   { bg: "#faeeda", text: "#854f0b", dot: "#ba7517", css: "attenzione" },
+    buono:        { bg: "#eaf3de", text: "#3b6d11", dot: "#639922", css: "buono"      },
+    regolare:     { bg: "#eaf3de", text: "#3b6d11", dot: "#639922", css: "regolare"   },
+    fuori_servizio:{ bg: "#f1efe8", text: "#5f5e5a", dot: "#888780", css: "fuori_servizio" },
+    magazzino:    { bg: "#e6f1fb", text: "#185fa5", dot: "#378add", css: "magazzino"  },
+    senza_data:   { bg: "#f1efe8", text: "#5f5e5a", dot: "#888780", css: "senza_data" },
   };
   return map[stato] || map.senza_data;
 }
