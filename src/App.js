@@ -50,7 +50,7 @@ export default function App() {
         }}/>
         <header className="topbar">
           <div className="topbar-brand">
-            <img src="/logo78.png" alt="Logo 78" style={{ height: 44, width: 44, objectFit: "contain", filter: "invert(1) brightness(2)" }} />
+            <img src="/logo78.png" alt="Logo 78" style={{ height: 72, width: 72, objectFit: "contain", filter: "invert(1) brightness(2)" }} />
             <span>SICS — Cuscini di Sollevamento</span>
           </div>
           <div className="topbar-right">

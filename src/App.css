@@ -13,13 +13,14 @@ body {
 /* TOPBAR */
 .topbar {
   background: #1a2b3c;
-  padding: 12px 24px;
+  padding: 8px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 100;
+  min-height: 72px;
 }
 .topbar-brand {
   display: flex;
