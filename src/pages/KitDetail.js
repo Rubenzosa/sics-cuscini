@@ -3,8 +3,6 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { deleteKit } from "../firebase/service";
 import { calcolaStato, statoLabel, formatData, giorniAllaScadenza } from "../utils";
 
-
-
 export default function KitDetail({ kits, reload }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -36,17 +34,28 @@ export default function KitDetail({ kits, reload }) {
   function GruppoComp({ titolo, items }) {
     if (!items.length) return null;
     return (
-      <div style={{ marginBottom: 14 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 6 }}>{titolo}</div>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 8 }}>{titolo} ({items.length})</div>
         <div className="comp-list">
           {items.map((c, i) => (
             <div key={i} className="comp-item">
-              <div>
-                <div className="comp-tipo">{c.tipo}</div>
-                <div className="comp-modello">{c.modello || "—"}</div>
-                {c.note && <div style={{ fontSize: 10, color: "#e24b4a", marginTop: 2 }}>{c.note}</div>}
+              <div style={{ flex: 1 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <span className="comp-tipo">{c.tipo}</span>
+                  {c.note && <span style={{ fontSize: 10, background: "#fcebeb", color: "#a32d2d", padding: "2px 7px", borderRadius: 10, fontWeight: 600 }}>{c.note}</span>}
+                </div>
+                <div className="comp-modello" style={{ marginTop: 2 }}>{c.modello || "—"}</div>
               </div>
-              <div className="comp-matricola">{c.matricola || "—"}</div>
+              <div style={{ textAlign: "right", minWidth: 180 }}>
+                {/* Matricola Lucca in evidenza */}
+                {c.matricolaLucca && (
+                  <div style={{ fontFamily: "monospace", fontWeight: 700, fontSize: 13, color: "#185fa5", background: "#e6f1fb", padding: "3px 10px", borderRadius: 6, display: "inline-block", marginBottom: 4 }}>
+                    {c.matricolaLucca}
+                  </div>
+                )}
+                <div className="comp-matricola">{c.matricola || "—"}</div>
+                <div style={{ fontSize: 10, color: "#888" }}>{c.bar} bar</div>
+              </div>
             </div>
           ))}
         </div>
@@ -57,7 +66,7 @@ export default function KitDetail({ kits, reload }) {
   return (
     <div>
       <div className="page-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <button className="btn btn-secondary" onClick={() => navigate("/kit")}>← Indietro</button>
           <h1 className="page-title">Kit {kit.numero} — {kit.nome}</h1>
           <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
@@ -74,7 +83,7 @@ export default function KitDetail({ kits, reload }) {
         </div>
       )}
       {stato === "in_scadenza" && (
-        <div className="alert-banner" style={{ background: "#faeeda", borderColor: "#fac775", color: "#854f0b" }}>
+        <div className="alert-banner" style={{ background: "#faeeda", borderColor: "#fac775", color: "#854f0b", marginBottom: 16 }}>
           ⏱ Questo kit scade tra {giorni} giorni — pianifica la revisione
         </div>
       )}
@@ -91,14 +100,15 @@ export default function KitDetail({ kits, reload }) {
                 ["Tipo mezzo", kit.tipoMezzo || "—"],
                 ["Pressione", `${kit.bar} bar`],
                 ["Anno acquisto", kit.annoAcquisto],
+                ["Data acquisto", formatData(kit.dataAcquisto)],
                 ["Dislocazione", kit.dislocazione || "—"],
                 ["Ultima revisione", formatData(kit.dataRevisione)],
                 ["Scade tra", giorni !== null ? (giorni < 0 ? `SCADUTO (${Math.abs(giorni)}gg fa)` : `${giorni} giorni`) : "N/D"],
                 ["Totale componenti", kit.componenti?.length || 0],
               ].map(([label, val]) => (
                 <tr key={label}>
-                  <td style={{ color: "#888", fontSize: 12, width: "40%", padding: "7px 0" }}>{label}</td>
-                  <td style={{ fontWeight: 500, fontSize: 13, padding: "7px 0" }}>{val}</td>
+                  <td style={{ color: "#888", fontSize: 12, width: "42%", padding: "7px 0", borderBottom: "1px solid #f0f2f5" }}>{label}</td>
+                  <td style={{ fontWeight: 500, fontSize: 13, padding: "7px 0", borderBottom: "1px solid #f0f2f5" }}>{val}</td>
                 </tr>
               ))}
             </tbody>
@@ -106,7 +116,10 @@ export default function KitDetail({ kits, reload }) {
         </div>
 
         <div className="card">
-          <div className="card-header"><span className="card-title">Componenti ({kit.componenti?.length || 0})</span></div>
+          <div className="card-header">
+            <span className="card-title">Componenti ({kit.componenti?.length || 0})</span>
+            <span style={{ fontSize: 11, color: "#888" }}>Matricola Lucca in blu</span>
+          </div>
           <GruppoComp titolo="Cuscini" items={cuscini} />
           <GruppoComp titolo="Centralina" items={centraline} />
           <GruppoComp titolo="Riduttore" items={riduttori} />
