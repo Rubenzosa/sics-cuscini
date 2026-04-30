@@ -1,6 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { calcolaStato, statoLabel, formatData, giorniAllaScadenza } from "../utils";
+import { calcolaStato, statoLabel, giorniAllaScadenza } from "../utils";
 
 export default function Dashboard({ kits }) {
   const navigate = useNavigate();

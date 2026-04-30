@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, NavLink, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink } from "react-router-dom";
 import Dashboard from "./pages/Dashboard";
 import KitList from "./pages/KitList";
 import KitDetail from "./pages/KitDetail";
@@ -29,7 +29,7 @@ export default function App() {
     setLoading(false);
   }
 
-  useEffect(() => { loadKits(); }, []);
+  useEffect(() => { loadKits(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const critici = kits.filter(k => {
     const s = calcolaStato(k);

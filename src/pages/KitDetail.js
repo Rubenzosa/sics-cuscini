@@ -3,18 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { deleteKit } from "../firebase/service";
 import { calcolaStato, statoLabel, formatData, giorniAllaScadenza } from "../utils";
 
-const TIPO_ICON = {
-  CENTRALINA: "⚙",
-  RIDUTTORE: "🔧",
-  "RUB. VALVOLARE": "🔩",
-  default: "▪",
-};
 
-function tipoIcon(tipo) {
-  if (tipo.startsWith("CUSCINO")) return "◼";
-  if (tipo.startsWith("TUBO")) return "━";
-  return TIPO_ICON[tipo] || TIPO_ICON.default;
-}
 
 export default function KitDetail({ kits, reload }) {
   const { id } = useParams();

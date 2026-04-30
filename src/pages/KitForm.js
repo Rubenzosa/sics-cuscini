@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { saveKit, updateKit } from "../firebase/service";
+import { saveKit } from "../firebase/service";
 
 const DISLOCAZIONI = ["Sede Centrale", "Magazzino", "Montepulciano", "Montalcino", "Poggibonsi", "Piancastagnaio"];
-const STATI = ["attivo", "magazzino", "fuori_servizio"];
 const TIPI_COMP = ["CUSCINO 30X30","CUSCINO 35X35","CUSCINO 37X37","CUSCINO 38X38","CUSCINO 40X40","CUSCINO 45X45","CUSCINO 47X52","CUSCINO 48X58","CUSCINO 50X50","CUSCINO 55X55","CUSCINO 60X60","CUSCINO 65X65","CUSCINO 100X32","CENTRALINA","RIDUTTORE","TUBO","TUBO 2MT","TUBO 5MT","RUB. VALVOLARE"];
 
 function emptyComp() {
