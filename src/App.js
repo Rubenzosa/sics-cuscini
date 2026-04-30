@@ -41,10 +41,7 @@ export default function App() {
       <div className="app-shell">
         <header className="topbar">
           <div className="topbar-brand">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C8 6 6 10 8 14C9 16 8 18 6 19C10 21 16 20 18 16C20 12 17 8 12 2Z" fill="#378add"/>
-              <path d="M12 10C11 12 12 14 13 15C13.5 14 13 12 12 10Z" fill="#85b7eb"/>
-            </svg>
+            <img src="/logo78.png" alt="Logo 78" style={{ height: 44, width: 44, objectFit: "contain", filter: "invert(1) brightness(2)" }} />
             <span>SICS — Cuscini di Sollevamento</span>
           </div>
           <div className="topbar-right">
