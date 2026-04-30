@@ -39,6 +39,15 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 0,
+          backgroundImage: "url('/logo78.png')",
+          backgroundRepeat: "no-repeat",
+          backgroundPosition: "center center",
+          backgroundSize: "400px",
+          opacity: 0.07,
+          pointerEvents: "none",
+        }}/>
         <header className="topbar">
           <div className="topbar-brand">
             <img src="/logo78.png" alt="Logo 78" style={{ height: 44, width: 44, objectFit: "contain", filter: "invert(1) brightness(2)" }} />
