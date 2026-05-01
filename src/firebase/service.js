@@ -1,7 +1,7 @@
 import { db } from "./config";
 import {
   collection, doc, getDocs, getDoc,
-  updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp, query, where, orderBy
+  updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 
 const KITS = "kits";
