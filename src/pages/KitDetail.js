@@ -154,7 +154,7 @@ export default function KitDetail({ kits, reload }) {
       {stato === "critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>⏱ Scade tra {giorni} giorni — pianifica revisione</div>}
 
       {/* TAB NAV */}
-      <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)" }}>
+      <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
         {[["info","Informazioni"],["componenti",`Componenti (${kit.componenti?.length||0})`],["revisioni",`Revisioni (${revisioni.length})`],["sostituzioni",`Sostituzioni (${storicoSost.length})`],["spostamenti",`Spostamenti (${storicoSpost.length})`]].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{ background:"none", border:"none", padding:"10px 16px", fontSize:13, fontWeight:tab===key?700:500, color:tab===key?"var(--text)":"var(--text3)", borderBottom:tab===key?"2px solid var(--accent)":"2px solid transparent", cursor:"pointer", fontFamily:"inherit", marginBottom:-2 }}>
             {label}

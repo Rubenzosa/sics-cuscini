@@ -668,3 +668,129 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
   .main-content { padding: 10px 16px; }
   .stats-row { grid-template-columns: repeat(4, 1fr); }
 }
+
+
+/* ══════════════════════════════════════════
+   RESPONSIVE — TABLET (≤ 900px)
+   ══════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .stats-row       { grid-template-columns: repeat(2, 1fr); }
+  .two-col         { grid-template-columns: 1fr; }
+  .mezzi-grid      { grid-template-columns: repeat(3, 1fr); }
+  .kanban-grid     { grid-template-columns: repeat(2, 1fr); }
+  .global-search-wrap { max-width: 240px; }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE — MOBILE (≤ 600px)
+   ══════════════════════════════════════════ */
+@media (max-width: 600px) {
+
+  /* ── TOPBAR ── */
+  .topbar          { padding: 6px 12px; min-height: 60px; }
+  .topbar-brand    { font-size: 11px; gap: 8px; }
+  .topbar-brand img{ height: 44px !important; width: 44px !important; }
+  .topbar-brand span { display: none; } /* Nasconde testo su mobile piccolo */
+  .badge-critico   { font-size: 10px; padding: 3px 7px; }
+  .global-search-wrap { display: none; }
+  .theme-toggle    { font-size: 11px; padding: 4px 8px; }
+
+  /* ── NAVBAR ── */
+  .navbar          { padding: 0 6px; }
+  .nav-item        { padding: 9px 10px; font-size: 12px; }
+
+  /* ── LAYOUT ── */
+  .main-content    { padding: 10px 10px 80px; } /* padding bottom per thumb zone */
+  .two-col         { grid-template-columns: 1fr; gap: 10px; }
+  .form-grid       { grid-template-columns: 1fr; }
+
+  /* ── STATS ── */
+  .stats-row       { grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+  .stat-card       { padding: 12px 12px; }
+  .stat-num        { font-size: 24px; }
+  .stat-label      { font-size: 10px; }
+
+  /* ── CARD ── */
+  .card            { padding: 12px; }
+  .card-header     { flex-wrap: wrap; gap: 8px; }
+  .card-title      { font-size: 13px; }
+
+  /* ── PAGE HEADER ── */
+  .page-header     { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .page-header > div { flex-wrap: wrap; gap: 8px; }
+  .page-title      { font-size: 16px; }
+
+  /* ── SEARCH ── */
+  .search-bar      { gap: 6px; }
+  .search-input    { min-width: 100%; border-radius: 10px; }
+  .filter-chip     { font-size: 11px; padding: 6px 10px; }
+
+  /* ── TABLES ── */
+  .table-wrap      { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: var(--radius-sm); }
+  table            { min-width: 520px; }
+  th               { font-size: 10px; padding: 8px 8px; }
+  td               { font-size: 12px; padding: 9px 8px; }
+
+  /* ── KIT ROWS ── */
+  .kit-row         { padding: 10px 0; }
+  .kit-row:hover   { margin: 0 -12px; padding: 10px 12px; }
+  .kit-num         { width: 32px; height: 32px; font-size: 11px; }
+  .kit-name        { font-size: 12px; }
+  .kit-sub         { font-size: 10px; }
+
+  /* ── BUTTONS ── */
+  .btn             { padding: 8px 14px; font-size: 12px; }
+  .btn + .btn      { margin-left: 0; }
+
+  /* ── MEZZI / KANBAN ── */
+  .mezzi-grid      { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .kanban-grid     { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .kanban-card     { padding: 10px; }
+  .kanban-nome     { font-size: 11px; }
+
+  /* ── COMPONENTI ── */
+  .comp-item       { flex-direction: column; gap: 8px; }
+
+  /* ── MODAL ── */
+  .modal-overlay   { padding: 0; align-items: flex-end; }
+  .modal           {
+    border-radius: 20px 20px 0 0;
+    padding: 20px 16px;
+    max-height: 92vh;
+    width: 100%;
+    max-width: 100%;
+  }
+  .modal-title     { font-size: 15px; }
+
+  /* ── TABS (KitDetail) ── */
+  .tabs-row        { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+  /* ── TIMELINE ── */
+  .timeline        { padding-left: 20px; }
+
+  /* ── RING ── */
+  .ring-wrap       { width: 36px; height: 36px; }
+
+  /* ── ALERT ── */
+  .alert-banner    { font-size: 12px; padding: 10px 12px; }
+
+  /* ── FORM ── */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    font-size: 16px; /* evita zoom automatico su iOS */
+    padding: 10px 12px;
+  }
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE — LANDSCAPE MOBILE (≤ 812px)
+   ══════════════════════════════════════════ */
+@media (max-width: 812px) and (orientation: landscape) {
+  .topbar          { min-height: 52px; padding: 5px 16px; }
+  .topbar-brand img{ height: 36px !important; width: 36px !important; }
+  .main-content    { padding: 8px 14px; }
+  .stats-row       { grid-template-columns: repeat(4, 1fr); }
+  .modal-overlay   { align-items: center; padding: 12px; }
+  .modal           { border-radius: 16px; max-height: 88vh; }
+}
