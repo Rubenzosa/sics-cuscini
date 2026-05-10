@@ -7,8 +7,13 @@ import KitDetail from "./pages/KitDetail";
 import KitForm from "./pages/KitForm";
 import Scadenze from "./pages/Scadenze";
 import KanbanMezzi from "./pages/KanbanMezzi";
-import { getAllKits, seedDatabase, cercaGlobale } from "./firebase/service";
+import Rotazioni from "./pages/Rotazioni";
+import GruppiTaglioList from "./pages/GruppiTaglioList";
+import GruppiTaglioDetail from "./pages/GruppiTaglioDetail";
+import GruppiTaglioForm from "./pages/GruppiTaglioForm";
+import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio } from "./firebase/service";
 import { kitData } from "./data/kitData";
+import { gruppiTaglioData } from "./data/gruppiTaglioData";
 import { calcolaStato } from "./utils";
 import "./App.css";
 
@@ -85,11 +90,34 @@ function GlobalSearch() {
 
 export default function App() {
   const [kits, setKits] = useState([]);
+  const [gruppiTaglio, setGruppiTaglio] = useState([]);
   const [loading, setLoading] = useState(true);
   const [seeded, setSeeded] = useState(false);
   const [darkMode, setDarkMode] = useState(
     function() { return localStorage.getItem("theme") === "dark"; }
   );
+  const [installPrompt, setInstallPrompt] = useState(null);
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
+  useEffect(function() {
+    function handleBeforeInstall(e) {
+      e.preventDefault();
+      setInstallPrompt(e);
+      setShowInstallBanner(true);
+    }
+    window.addEventListener("beforeinstallprompt", handleBeforeInstall);
+    return function() { window.removeEventListener("beforeinstallprompt", handleBeforeInstall); };
+  }, []);
+
+  async function handleInstall() {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    const result = await installPrompt.userChoice;
+    if (result.outcome === "accepted") {
+      setShowInstallBanner(false);
+      setInstallPrompt(null);
+    }
+  }
 
   useEffect(function() {
     document.documentElement.setAttribute("data-theme", darkMode ? "dark" : "light");
@@ -98,6 +126,9 @@ export default function App() {
 
   const loadKits = useCallback(async function() {
     const data = await getAllKits();
+    // also reload GT
+    const gtRefresh = await getAllGruppiTaglio();
+    setGruppiTaglio(gtRefresh);
     if (data.length === 0 && !seeded) {
       await seedDatabase(kitData);
       setSeeded(true);
@@ -105,6 +136,15 @@ export default function App() {
       setKits(fresh);
     } else {
       setKits(data);
+    }
+    // Carica anche gruppi da taglio
+    const gtData = await getAllGruppiTaglio();
+    if (gtData.length === 0) {
+      await seedGruppiTaglio(gruppiTaglioData);
+      const freshGT = await getAllGruppiTaglio();
+      setGruppiTaglio(freshGT);
+    } else {
+      setGruppiTaglio(gtData);
     }
     setLoading(false);
   }, [seeded]);
@@ -119,6 +159,37 @@ export default function App() {
   return (
     <BrowserRouter>
       <div className="app-shell">
+        {showInstallBanner && (
+          <div style={{
+            position: "fixed", bottom: 0, left: 0, right: 0,
+            background: "#1a2b3c", color: "#fff",
+            padding: "14px 20px", zIndex: 9999,
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            gap: 12, boxShadow: "0 -4px 20px rgba(0,0,0,0.3)",
+            borderTop: "2px solid #378add",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <img src="/logo78.png" alt="SICS" style={{ height: 40, width: 40, objectFit: "contain", filter: "invert(1) brightness(2)" }}/>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 14 }}>Installa SICS 78</div>
+                <div style={{ fontSize: 12, color: "#8da4bc", marginTop: 2 }}>Aggiungi alla schermata home</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={function() { setShowInstallBanner(false); }} style={{
+                background: "none", border: "1px solid rgba(255,255,255,0.25)",
+                color: "#fff", borderRadius: 8, padding: "6px 12px",
+                fontSize: 12, cursor: "pointer",
+              }}>Non ora</button>
+              <button onClick={handleInstall} style={{
+                background: "#378add", border: "none", color: "#fff",
+                borderRadius: 8, padding: "6px 16px",
+                fontSize: 12, fontWeight: 700, cursor: "pointer",
+              }}>Installa</button>
+            </div>
+          </div>
+        )}
+
         <div style={{
           position: "fixed",
           inset: 0,
@@ -167,6 +238,12 @@ export default function App() {
           <NavLink to="/scadenze" className={function(a) { return a.isActive ? "nav-item active" : "nav-item"; }}>
             Scadenze
           </NavLink>
+          <NavLink to="/rotazioni" className={function(a) { return a.isActive ? "nav-item active" : "nav-item"; }}>
+            Rotazioni
+          </NavLink>
+          <NavLink to="/gruppi-taglio" className={function(a) { return a.isActive ? "nav-item active" : "nav-item"; }}>
+            Gruppi taglio
+          </NavLink>
         </nav>
 
         <main className="main-content">
@@ -181,6 +258,11 @@ export default function App() {
               <Route path="/kit/:id/modifica" element={<KitForm kits={kits} reload={loadKits} />} />
               <Route path="/mezzi" element={<KanbanMezzi kits={kits} />} />
               <Route path="/scadenze" element={<Scadenze kits={kits} />} />
+              <Route path="/rotazioni" element={<Rotazioni kits={kits} reload={loadKits} />} />
+              <Route path="/gruppi-taglio" element={<GruppiTaglioList gruppi={gruppiTaglio} reload={loadKits} />} />
+              <Route path="/gruppi-taglio/nuovo" element={<GruppiTaglioForm gruppi={gruppiTaglio} reload={loadKits} />} />
+              <Route path="/gruppi-taglio/:id" element={<GruppiTaglioDetail gruppi={gruppiTaglio} reload={loadKits} />} />
+              <Route path="/gruppi-taglio/:id/modifica" element={<GruppiTaglioForm gruppi={gruppiTaglio} reload={loadKits} />} />
             </Routes>
           )}
         </main>

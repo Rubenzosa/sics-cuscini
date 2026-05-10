@@ -137,3 +137,143 @@ export async function cercaGlobale(query_str) {
   });
   return risultati.slice(0, 20);
 }
+
+// ─── ROTAZIONI & REVISIONI ──────────────────────────────────
+
+// Invia kit in revisione — cambia stato e registra
+export async function inviaInRevisione(kitId, officina, dataInvio, dataRientroStimata, note) {
+  const kitSnap = await getDoc(doc(db, KITS, kitId));
+  if (!kitSnap.exists()) throw new Error("Kit non trovato");
+  const kit = kitSnap.data();
+  await addDoc(collection(db, "rotazioni"), {
+    kitId, kitNumero: kit.numero, kitNome: kit.nome,
+    mezzo: kit.mezzo, dislocazione: kit.dislocazione,
+    officina: officina || "",
+    dataInvio: dataInvio || new Date().toISOString().split("T")[0],
+    dataRientroStimata: dataRientroStimata || "",
+    dataRientroEffettiva: null,
+    note: note || "",
+    stato: "in_revisione",
+    timestamp: serverTimestamp(),
+  });
+  await updateDoc(doc(db, KITS, kitId), {
+    stato: "in_revisione",
+    dataInvioRevisione: dataInvio || new Date().toISOString().split("T")[0],
+    dataRientroStimata: dataRientroStimata || "",
+    officina: officina || "",
+  });
+}
+
+// Registra rientro dalla revisione
+export async function registraRientro(kitId, rotazioneId, dataRientro, nuovaDataRevisione, esito, note) {
+  await updateDoc(doc(db, "rotazioni", rotazioneId), {
+    dataRientroEffettiva: dataRientro,
+    stato: "rientrato",
+    esitoRevisione: esito || "positivo",
+    noteRientro: note || "",
+  });
+  await updateDoc(doc(db, KITS, kitId), {
+    stato: "attivo",
+    dataRevisione: nuovaDataRevisione,
+    dataInvioRevisione: null,
+    dataRientroStimata: null,
+    officina: null,
+    ultimaRevisioneEsito: esito || "positivo",
+  });
+}
+
+// Recupera tutte le rotazioni attive (in_revisione)
+export async function getRotazioniAttive() {
+  const snap = await getDocs(collection(db, "rotazioni"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(r => r.stato === "in_revisione")
+    .sort((a, b) => (a.dataInvio || "").localeCompare(b.dataInvio || ""));
+}
+
+// Recupera storico rotazioni
+export async function getStoricoRotazioni() {
+  const snap = await getDocs(collection(db, "rotazioni"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.dataInvio || "").localeCompare(a.dataInvio || ""));
+}
+
+// Recupera rotazioni per kit specifico
+export async function getRotazioniKit(kitId) {
+  const snap = await getDocs(collection(db, "rotazioni"));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(r => r.kitId === kitId)
+    .sort((a, b) => (b.dataInvio || "").localeCompare(a.dataInvio || ""));
+}
+
+// ─── GRUPPI DA TAGLIO ────────────────────────────────────────
+const GT = "gruppi_taglio";
+const GT_REV = "gt_revisioni";
+const GT_MANUTENZIONE = "gt_manutenzione";
+
+export async function getAllGruppiTaglio() {
+  const snap = await getDocs(collection(db, GT));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function saveGruppoTaglio(gt) {
+  const { id, ...data } = gt;
+  await setDoc(doc(db, GT, id), data);
+}
+
+export async function updateGruppoTaglio(id, data) {
+  await updateDoc(doc(db, GT, id), data);
+}
+
+export async function deleteGruppoTaglio(id) {
+  await deleteDoc(doc(db, GT, id));
+}
+
+export async function seedGruppiTaglio(gruppi) {
+  for (const gt of gruppi) {
+    const { id, ...data } = gt;
+    await setDoc(doc(db, GT, id), data);
+  }
+}
+
+export async function aggiungiRevisioneGT(gtId, revisione) {
+  const snap = await getDoc(doc(db, GT, gtId));
+  if (!snap.exists()) throw new Error("Gruppo taglio non trovato");
+  const gt = snap.data();
+  await addDoc(collection(db, GT_REV), {
+    gtId, gtNome: gt.nome, gtNumero: gt.numero,
+    ...revisione,
+    dataRegistrazione: new Date().toISOString(),
+    timestamp: serverTimestamp(),
+  });
+  await updateDoc(doc(db, GT, gtId), {
+    ultimaRevisioneData: revisione.dataRevisione,
+    ultimaRevisioneEsito: revisione.esito,
+    ultimaRevisioneTecnico: revisione.tecnico,
+  });
+}
+
+export async function getRevisioniGT(gtId) {
+  const snap = await getDocs(collection(db, GT_REV));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(r => r.gtId === gtId)
+    .sort((a, b) => (b.dataRevisione || "").localeCompare(a.dataRevisione || ""));
+}
+
+export async function aggiungiManutenzioneGT(gtId, manutenzione) {
+  const snap = await getDoc(doc(db, GT, gtId));
+  if (!snap.exists()) throw new Error("Gruppo taglio non trovato");
+  const gt = snap.data();
+  await addDoc(collection(db, GT_MANUTENZIONE), {
+    gtId, gtNome: gt.nome,
+    ...manutenzione,
+    dataRegistrazione: new Date().toISOString(),
+    timestamp: serverTimestamp(),
+  });
+}
+
+export async function getManutenzioniGT(gtId) {
+  const snap = await getDocs(collection(db, GT_MANUTENZIONE));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(r => r.gtId === gtId)
+    .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+}
