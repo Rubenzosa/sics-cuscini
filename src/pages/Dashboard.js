@@ -1,7 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { calcolaStato, calcolaStatoGT, statoLabel, formatData, giorniAllaScadenza, prossimaRevisioneGT, sistemaBadge } from "../utils";
+import { calcolaStato, calcolaStatoGT, statoLabel, formatData, giorniAllaScadenza, prossimaRevisioneGT } from "../utils";
 
 // ── RING INDICATOR ──────────────────────────────────────────
 function Ring({ giorni, stato, size = 44 }) {
