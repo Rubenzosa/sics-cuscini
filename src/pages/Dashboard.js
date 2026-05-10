@@ -62,7 +62,7 @@ function SezioneSistema({ titolo, colore, coloreTesto, items, onClickItem, onCli
           </div>
         ) : (
           items.map((item, i) => {
-            const { stato, giorni, nome, mezzo, sub, id } = item;
+            const { stato, giorni, nome, sub, id } = item;
             return (
               <div key={id || i}
                 onClick={() => onClickItem(id)}

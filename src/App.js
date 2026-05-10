@@ -14,7 +14,7 @@ import GruppiTaglioForm from "./pages/GruppiTaglioForm";
 import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio } from "./firebase/service";
 import { kitData } from "./data/kitData";
 import { gruppiTaglioData } from "./data/gruppiTaglioData";
-import { calcolaStato, calcolaStatoGT, prossimaRevisioneGT, giorniAllaScadenza } from "./utils";
+import { calcolaStato, calcolaStatoGT } from "./utils";
 import "./App.css";
 
 // ── RICERCA GLOBALE ─────────────────────────────────────────
