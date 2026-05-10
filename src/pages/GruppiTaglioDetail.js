@@ -134,7 +134,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
             <div className="card-header"><span className="card-title">Manutenzione corrente</span></div>
             {(gt.componenti||[]).filter(c => c.olio || c.candela).length === 0 ? (
               <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:20 }}>
-                Sistema elettrico — nessuna candela/olio
+                Sistema elettrico — nessuna candela/olio previsti
               </div>
             ) : (
               (gt.componenti||[]).filter(c => c.olio || c.candela).map((c,i) => (
