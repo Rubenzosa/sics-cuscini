@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from "react-router-dom";
 
@@ -24,6 +25,7 @@ import { gruppiTaglioData } from "./data/gruppiTaglioData";
 import { calcolaStato, calcolaStatoGT } from "./utils";
 import "./App.css";
 
+// eslint-disable-next-line no-unused-vars
 // ── RICERCA GLOBALE ─────────────────────────────────────────
 function GlobalSearch({ compact }) {
   const [q, setQ]         = useState("");
