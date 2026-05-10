@@ -307,11 +307,11 @@ export default function App() {
             <Routes>
               {/* STATO DEL GIORNO — home */}
               <Route path="/" element={
-                <StatoGiorno kits={kits} gruppiTaglio={gruppiTaglio}/>
+                <StatoGiorno kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>
               }/>
               {/* DA FARE */}
               <Route path="/da-fare" element={
-                <DaFare kits={kits} gruppiTaglio={gruppiTaglio}/>
+                <DaFare kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>
               }/>
               {/* STORICO — hub */}
               <Route path="/storico" element={

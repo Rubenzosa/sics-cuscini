@@ -120,12 +120,16 @@ function Zona({ titolo, sottotitolo, items, colore, bg, empty }) {
   );
 }
 
-export default function StatoGiorno({ kits, gruppiTaglio }) {
+export default function StatoGiorno({ kits, gruppiTaglio, sistema }) {
   const navigate = useNavigate();
+
+  // Filtra per sistema
+  const showCuscini = !sistema || sistema === "cuscini";
+  const showTaglio  = !sistema || sistema === "taglio";
 
   // Costruisce lista unificata
   const tutti = [
-    ...kits.filter(k => k.stato !== "fuori_servizio").map(k => ({
+    ...(showCuscini ? kits.filter(k => k.stato !== "fuori_servizio").map(k => ({
       id: k.id, tipo:"cuscini",
       nome: `Kit ${k.numero} — ${k.nome}`,
       sub: `${k.mezzo} · ${k.bar} bar · ${k.dislocazione}`,
@@ -133,8 +137,8 @@ export default function StatoGiorno({ kits, gruppiTaglio }) {
       stato: calcolaStato(k),
       giorni: giorniAllaScadenza(k.dataRevisione),
       onClick: () => navigate(`/kit/${k.id}`),
-    })),
-    ...gruppiTaglio.filter(g => g.stato !== "fuori_servizio").map(g => ({
+    })) : []),
+    ...(showTaglio ? gruppiTaglio.filter(g => g.stato !== "fuori_servizio").map(g => ({
       id: g.id, tipo:"taglio",
       nome: g.nome,
       sub: `${g.mezzo} · ${g.sistema} · ${g.dislocazione}`,
@@ -142,7 +146,7 @@ export default function StatoGiorno({ kits, gruppiTaglio }) {
       stato: calcolaStatoGT(g),
       giorni: giorniAllaScadenza(prossimaRevisioneGT(g)),
       onClick: () => navigate(`/gruppi-taglio/${g.id}`),
-    })),
+    })) : []),
   ].sort((a,b) => (a.giorni??9999) - (b.giorni??9999));
 
   const rossi   = tutti.filter(i => i.stato === "scaduto" || i.stato === "critico");

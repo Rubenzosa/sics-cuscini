@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT } from "../firebase/service";
 import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge } from "../utils";
+import Documenti from "../components/Documenti";
 
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
 
@@ -274,6 +275,17 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
               </table>
             </div>
           )}
+        </div>
+      )}
+
+      {/* TAB DOCUMENTI */}
+      {tab==="documenti" && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Documenti allegati</span>
+            <span style={{ fontSize:11, color:"var(--text3)" }}>Fatture, verbali, certificati</span>
+          </div>
+          <Documenti kitId={gt.id} kitNome={gt.nome} sistema="taglio"/>
         </div>
       )}
 

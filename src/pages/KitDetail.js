@@ -5,6 +5,7 @@ import {
   aggiungiRevisione, getRevisioni, spostaKit, getStoricoSpostamenti
 } from "../firebase/service";
 import { calcolaStato, statoLabel, formatData, giorniAllaScadenza } from "../utils";
+import Documenti from "../components/Documenti";
 import { PROSSIMI_SERIALI, buildMatricolaLucca } from "../data/kitData";
 
 const TIPI_COMP = ["CUSCINO 30X30","CUSCINO 35X35","CUSCINO 37X37","CUSCINO 38X38","CUSCINO 40X40","CUSCINO 45X45","CUSCINO 47X52","CUSCINO 48X58","CUSCINO 50X50","CUSCINO 55X55","CUSCINO 60X60","CUSCINO 65X65","CUSCINO 100X32","CENTRALINA","RIDUTTORE","TUBO","TUBO 2MT","TUBO 5MT","RUB. VALVOLARE"];
@@ -155,7 +156,7 @@ export default function KitDetail({ kits, reload }) {
 
       {/* TAB NAV */}
       <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        {[["info","Informazioni"],["componenti",`Componenti (${kit.componenti?.length||0})`],["revisioni",`Revisioni (${revisioni.length})`],["sostituzioni",`Sostituzioni (${storicoSost.length})`],["spostamenti",`Spostamenti (${storicoSpost.length})`]].map(([key, label]) => (
+        {[["info","Informazioni"],["componenti",`Componenti (${kit.componenti?.length||0})`],["revisioni",`Revisioni (${revisioni.length})`],["sostituzioni",`Sostituzioni (${storicoSost.length})`],["spostamenti",`Spostamenti (${storicoSpost.length})`],["documenti","Documenti"]].map(([key, label]) => (
           <button key={key} onClick={() => setTab(key)} style={{ background:"none", border:"none", padding:"10px 16px", fontSize:13, fontWeight:tab===key?700:500, color:tab===key?"var(--text)":"var(--text3)", borderBottom:tab===key?"2px solid var(--accent)":"2px solid transparent", cursor:"pointer", fontFamily:"inherit", marginBottom:-2 }}>
             {label}
           </button>
@@ -328,6 +329,17 @@ export default function KitDetail({ kits, reload }) {
         </div>
       )}
 
+      {/* TAB: DOCUMENTI */}
+      {tab === "documenti" && (
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Documenti allegati</span>
+            <span style={{ fontSize:11, color:"var(--text3)" }}>Fatture, verbali, certificati</span>
+          </div>
+          <Documenti kitId={kit.id} kitNome={kit.nome} sistema="cuscini"/>
+        </div>
+      )}
+
       {/* MODAL: SOSTITUZIONE COMPONENTE */}
       {modalSost !== null && (
         <div className="modal-overlay">
@@ -357,7 +369,7 @@ export default function KitDetail({ kits, reload }) {
             </div>
             <div className="section-green">
               <div className="section-label green">Nuovo componente entrante</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(180px, 1fr))", gap:10 }}>
                 <div className="form-group"><label>Tipo</label><select value={nuovoComp.tipo} onChange={e => handleNuovoCompChange("tipo", e.target.value)}>{TIPI_COMP.map(t => <option key={t} value={t}>{t}</option>)}</select></div>
                 <div className="form-group"><label>Bar</label><select value={nuovoComp.bar} onChange={e => handleNuovoCompChange("bar", Number(e.target.value))}><option value={8}>8 bar</option><option value={10}>10 bar</option><option value={12}>12 bar</option></select></div>
                 <div className="form-group"><label>Modello</label><input value={nuovoComp.modello} onChange={e => handleNuovoCompChange("modello", e.target.value)} placeholder="es. VETTER ARAMIDE V20"/></div>

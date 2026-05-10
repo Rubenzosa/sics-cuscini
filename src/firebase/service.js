@@ -277,3 +277,72 @@ export async function getManutenzioniGT(gtId) {
     .filter(r => r.gtId === gtId)
     .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
 }
+
+// ─── DOCUMENTI / ALLEGATI ────────────────────────────────────
+import { storage } from "./config";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
+
+const DOCS = "documenti";
+const DRIVE_FOLDER_ROOT = "1-HobTrpU-5ZkG9y1zeMeTSiZS8Yc22xw";
+
+// Carica file su Firebase Storage + salva metadati su Firestore
+export async function uploadDocumento(file, opts) {
+  // opts: { kitId, kitNome, sistema, tipoDoc, anno, onProgress }
+  const { kitId, kitNome, sistema, tipoDoc, anno, onProgress } = opts;
+  const annoStr   = anno || new Date().getFullYear();
+  const sistema_  = sistema === "taglio" ? "Gruppi_Taglio" : "Cuscini";
+  const nomeFile  = `${sistema_}_${kitNome.replace(/\s+/g,"_")}_${tipoDoc.replace(/\s+/g,"_")}_${new Date().toISOString().split("T")[0]}_${file.name}`;
+  const path      = `documenti/${annoStr}/${sistema_}/${nomeFile}`;
+  const storRef   = ref(storage, path);
+
+  // Upload con progress
+  return new Promise((resolve, reject) => {
+    const task = uploadBytesResumable(storRef, file, {
+      contentType: file.type,
+      customMetadata: { kitId, kitNome, sistema, tipoDoc, anno: String(annoStr) }
+    });
+    task.on("state_changed",
+      snap => { if (onProgress) onProgress(Math.round((snap.bytesTransferred / snap.totalBytes) * 100)); },
+      reject,
+      async () => {
+        const url = await getDownloadURL(task.snapshot.ref);
+        // Salva metadati in Firestore
+        const docRef = await addDoc(collection(db, DOCS), {
+          kitId, kitNome, sistema,
+          tipoDoc:    tipoDoc || "Documento",
+          anno:       annoStr,
+          nomeFile,
+          path,
+          url,
+          dimensione: file.size,
+          mimeType:   file.type,
+          dataCaricamento: new Date().toISOString(),
+          driveFolderRoot: DRIVE_FOLDER_ROOT,
+          timestamp:  serverTimestamp(),
+        });
+        resolve({ id: docRef.id, url, nomeFile, path });
+      }
+    );
+  });
+}
+
+export async function getDocumentiKit(kitId) {
+  const snap = await getDocs(collection(db, DOCS));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(d => d.kitId === kitId)
+    .sort((a, b) => (b.dataCaricamento||"").localeCompare(a.dataCaricamento||""));
+}
+
+export async function deleteDocumento(docId, path) {
+  try {
+    const storRef = ref(storage, path);
+    await deleteObject(storRef);
+  } catch(e) { /* file già eliminato */ }
+  await deleteDoc(doc(db, DOCS, docId));
+}
+
+export async function getAllDocumenti() {
+  const snap = await getDocs(collection(db, DOCS));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.dataCaricamento||"").localeCompare(a.dataCaricamento||""));
+}

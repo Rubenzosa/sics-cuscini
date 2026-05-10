@@ -48,12 +48,15 @@ function AzioneCard({ titolo, descrizione, dettaglio, urgenza, onClick, tipo }) 
   );
 }
 
-export default function DaFare({ kits, gruppiTaglio }) {
+export default function DaFare({ kits, gruppiTaglio, sistema }) {
   const navigate = useNavigate();
   const azioni = [];
 
+  const showCuscini = !sistema || sistema === "cuscini";
+  const showTaglio  = !sistema || sistema === "taglio";
+
   // ── SCADUTI ─────────────────────────────
-  kits.filter(k => calcolaStato(k) === "scaduto").forEach(k => {
+  if (showCuscini) kits.filter(k => calcolaStato(k) === "scaduto").forEach(k => {
     const g = giorniAllaScadenza(k.dataRevisione);
     azioni.push({
       urgenza: "alta",
@@ -65,7 +68,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
       sorter: -Math.abs(g),
     });
   });
-  gruppiTaglio.filter(g => calcolaStatoGT(g) === "scaduto").forEach(g => {
+  if (showTaglio) gruppiTaglio.filter(g => calcolaStatoGT(g) === "scaduto").forEach(g => {
     const pr = prossimaRevisioneGT(g);
     const gg = giorniAllaScadenza(pr);
     azioni.push({
@@ -80,7 +83,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
   });
 
   // ── ENTRO 3 MESI ────────────────────────
-  kits.filter(k => calcolaStato(k) === "critico").forEach(k => {
+  if (showCuscini) kits.filter(k => calcolaStato(k) === "critico").forEach(k => {
     const g = giorniAllaScadenza(k.dataRevisione);
     azioni.push({
       urgenza: "alta",
@@ -92,7 +95,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
       sorter: g,
     });
   });
-  gruppiTaglio.filter(g => calcolaStatoGT(g) === "critico").forEach(g => {
+  if (showTaglio) gruppiTaglio.filter(g => calcolaStatoGT(g) === "critico").forEach(g => {
     const pr = prossimaRevisioneGT(g);
     const gg = giorniAllaScadenza(pr);
     azioni.push({
@@ -107,7 +110,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
   });
 
   // ── IN REVISIONE CON RIENTRO SCADUTO ────
-  kits.filter(k => k.stato === "in_revisione" && k.dataRientroStimata).forEach(k => {
+  if (showCuscini) kits.filter(k => k.stato === "in_revisione" && k.dataRientroStimata).forEach(k => {
     const gg = giorniAllaScadenza(k.dataRientroStimata);
     if (gg !== null && gg < 0) {
       azioni.push({
@@ -123,7 +126,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
   });
 
   // ── SENZA DATA REVISIONE ─────────────────
-  kits.filter(k => !k.dataRevisione && k.stato === "attivo").forEach(k => {
+  if (showCuscini) kits.filter(k => !k.dataRevisione && k.stato === "attivo").forEach(k => {
     azioni.push({
       urgenza: "media",
       tipo: "cuscini",
@@ -134,7 +137,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
       sorter: 9000,
     });
   });
-  gruppiTaglio.filter(g => !prossimaRevisioneGT(g) && g.stato === "attivo").forEach(g => {
+  if (showTaglio) gruppiTaglio.filter(g => !prossimaRevisioneGT(g) && g.stato === "attivo").forEach(g => {
     azioni.push({
       urgenza: "media",
       tipo: "taglio",
@@ -148,7 +151,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
 
   // ── ANNO CORRENTE ────────────────────────
   const annoOggi = new Date().getFullYear();
-  kits.filter(k => calcolaStato(k) === "attenzione").forEach(k => {
+  if (showCuscini) kits.filter(k => calcolaStato(k) === "attenzione").forEach(k => {
     const g = giorniAllaScadenza(k.dataRevisione);
     azioni.push({
       urgenza: "media",
@@ -160,7 +163,7 @@ export default function DaFare({ kits, gruppiTaglio }) {
       sorter: g + 200,
     });
   });
-  gruppiTaglio.filter(g => calcolaStatoGT(g) === "attenzione").forEach(g => {
+  if (showTaglio) gruppiTaglio.filter(g => calcolaStatoGT(g) === "attenzione").forEach(g => {
     const pr = prossimaRevisioneGT(g);
     const gg = giorniAllaScadenza(pr);
     azioni.push({
