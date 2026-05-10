@@ -162,31 +162,62 @@ export default function Dashboard({ kits, gruppiTaglio, sistemaAttivo, setSistem
       )}
 
       {/* ── STATS GLOBALI ── */}
-      <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:12, marginBottom:20 }}>
+      <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:20 }}>
+
         {/* Cuscini */}
-        <div className="stat-card blue" style={{ gridColumn:"span 2", borderTop:"3px solid #1a2b3c", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute", top:8, right:10, fontSize:10, fontWeight:800, color:"#1a2b3c", opacity:.4, textTransform:"uppercase", letterSpacing:".08em" }}>Cuscini</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginTop:12 }}>
-            <div><div className="stat-label">Totali</div><div className="stat-num blue" style={{ fontSize:22 }}>{kits.length}</div></div>
-            <div><div className="stat-label">Scaduti</div><div className="stat-num red" style={{ fontSize:22 }}>{scadC+critC}</div></div>
-            <div><div className="stat-label">Anno corr.</div><div className="stat-num amber" style={{ fontSize:22 }}>{attC}</div></div>
-            <div><div className="stat-label">In regola</div><div className="stat-num green" style={{ fontSize:22 }}>{buoniC}</div></div>
+        <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", borderTop:"3px solid #1a2b3c", padding:"12px 16px", boxShadow:"var(--shadow)" }}>
+          <div style={{ fontSize:10, fontWeight:800, color:"#1a2b3c", textTransform:"uppercase", letterSpacing:".08em", marginBottom:10, opacity:.7 }}>
+            Cuscini di Sollevamento
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">Totali</div>
+              <div className="stat-num blue" style={{ fontSize:20 }}>{kits.length}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">Critici</div>
+              <div className="stat-num red" style={{ fontSize:20 }}>{scadC+critC}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">Anno corr.</div>
+              <div className="stat-num amber" style={{ fontSize:20 }}>{attC}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">In regola</div>
+              <div className="stat-num green" style={{ fontSize:20 }}>{buoniC}</div>
+            </div>
           </div>
         </div>
+
         {/* Gruppi taglio */}
-        <div className="stat-card" style={{ gridColumn:"span 2", borderTop:"3px solid #e07020", position:"relative", overflow:"hidden" }}>
-          <div style={{ position:"absolute", top:8, right:10, fontSize:10, fontWeight:800, color:"#7a3500", opacity:.5, textTransform:"uppercase", letterSpacing:".08em" }}>Gruppi taglio</div>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:8, marginTop:12 }}>
-            <div><div className="stat-label">Totali</div><div style={{ fontSize:22, fontWeight:700, color:"#e07020" }}>{gruppiTaglio.length}</div></div>
-            <div><div className="stat-label">Scaduti</div><div className="stat-num red" style={{ fontSize:22 }}>{scadT+critT}</div></div>
-            <div><div className="stat-label">Anno corr.</div><div className="stat-num amber" style={{ fontSize:22 }}>{attT}</div></div>
-            <div><div className="stat-label">In regola</div><div className="stat-num green" style={{ fontSize:22 }}>{buoniT}</div></div>
+        <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", borderTop:"3px solid #e07020", padding:"12px 16px", boxShadow:"var(--shadow)" }}>
+          <div style={{ fontSize:10, fontWeight:800, color:"#7a3500", textTransform:"uppercase", letterSpacing:".08em", marginBottom:10, opacity:.8 }}>
+            Gruppi da Taglio
+          </div>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:6 }}>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">Totali</div>
+              <div style={{ fontSize:20, fontWeight:700, color:"#e07020", lineHeight:1 }}>{gruppiTaglio.length}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">Critici</div>
+              <div className="stat-num red" style={{ fontSize:20 }}>{scadT+critT}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">Anno corr.</div>
+              <div className="stat-num amber" style={{ fontSize:20 }}>{attT}</div>
+            </div>
+            <div style={{ textAlign:"center" }}>
+              <div className="stat-label">In regola</div>
+              <div className="stat-num green" style={{ fontSize:20 }}>{buoniT}</div>
+            </div>
           </div>
         </div>
+
       </div>
 
       {/* ── DUE SEZIONI DISTINTE ── */}
-      <div className="two-col" style={{ marginBottom:16 }}>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(min(100%, 480px), 1fr))", gap:16, marginBottom:16 }}>
         {/* Cuscini */}
         <SezioneSistema
           titolo="Cuscini di Sollevamento"

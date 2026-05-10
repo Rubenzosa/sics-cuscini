@@ -89,10 +89,10 @@ export default function GruppiTaglioList({ gruppi, reload }) {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Gruppi da taglio</h1>
-          <div style={{ fontSize:12, color:"var(--text3)", marginTop:4 }}>SIMDB — VVF Siena</div>
+          <h1 className="page-title">Kit</h1>
+          <div style={{ fontSize:12, color:"var(--text3)", marginTop:4 }}>Gruppi da taglio SIMDB — VVF Siena</div>
         </div>
-        <Link to="/gruppi-taglio/nuovo" className="btn btn-primary">+ Nuovo gruppo</Link>
+        <Link to="/gruppi-taglio/nuovo" className="btn btn-primary">+ Nuovo kit</Link>
       </div>
 
       {/* Ricerca */}

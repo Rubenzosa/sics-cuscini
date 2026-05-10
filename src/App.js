@@ -11,6 +11,7 @@ import Rotazioni from "./pages/Rotazioni";
 import GruppiTaglioList from "./pages/GruppiTaglioList";
 import GruppiTaglioDetail from "./pages/GruppiTaglioDetail";
 import GruppiTaglioForm from "./pages/GruppiTaglioForm";
+import KanbanMezziTaglio from "./pages/KanbanMezziTaglio";
 import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio } from "./firebase/service";
 import { kitData } from "./data/kitData";
 import { gruppiTaglioData } from "./data/gruppiTaglioData";
@@ -143,9 +144,10 @@ export default function App() {
   ];
 
   const navTaglio = [
-    { to: "/",                label: "Dashboard", end: true },
-    { to: "/gruppi-taglio",   label: "Gruppi taglio" },
-    { to: "/scadenze",        label: "Scadenze" },
+    { to: "/",                    label: "Dashboard", end: true },
+    { to: "/gruppi-taglio",       label: "Kit" },
+    { to: "/mezzi-taglio",        label: "Mezzi" },
+    { to: "/scadenze",            label: "Scadenze" },
   ];
 
   const navItems = sistema === "taglio" ? navTaglio : navCuscini;
@@ -268,6 +270,7 @@ export default function App() {
               <Route path="/gruppi-taglio/nuovo"        element={<GruppiTaglioForm gruppi={gruppiTaglio} reload={loadAll} />} />
               <Route path="/gruppi-taglio/:id"          element={<GruppiTaglioDetail gruppi={gruppiTaglio} reload={loadAll} />} />
               <Route path="/gruppi-taglio/:id/modifica" element={<GruppiTaglioForm gruppi={gruppiTaglio} reload={loadAll} />} />
+              <Route path="/mezzi-taglio" element={<KanbanMezziTaglio gruppi={gruppiTaglio} />} />
               {/* SCADENZE UNIFICATE */}
               <Route path="/scadenze" element={
                 <Scadenze kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema} />
