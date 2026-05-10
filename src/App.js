@@ -199,17 +199,7 @@ export default function App() {
                 {criticiTotali} CRITICI
               </span>
             )}
-            {/* Badge per sistema */}
-            {sistema === "cuscini" && criticiCuscini > 0 && (
-              <span style={{ fontSize:10, background:"rgba(255,255,255,0.15)", color:"#fff", padding:"3px 8px", borderRadius:10 }}>
-                C: {criticiCuscini}
-              </span>
-            )}
-            {sistema === "taglio" && criticiTaglio > 0 && (
-              <span style={{ fontSize:10, background:"rgba(255,255,255,0.15)", color:"#fff", padding:"3px 8px", borderRadius:10 }}>
-                T: {criticiTaglio}
-              </span>
-            )}
+
             <GlobalSearch />
             <button className="theme-toggle" onClick={() => setDarkMode(d => !d)}>
               {darkMode ? "☀" : "☾"}
