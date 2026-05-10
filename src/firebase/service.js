@@ -1,4 +1,5 @@
-import { db } from "./config";
+import { db, storage } from "./config";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import {
   collection, doc, getDocs, getDoc,
   updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
@@ -279,8 +280,6 @@ export async function getManutenzioniGT(gtId) {
 }
 
 // ─── DOCUMENTI / ALLEGATI ────────────────────────────────────
-import { storage } from "./config";
-import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 
 const DOCS = "documenti";
 const DRIVE_FOLDER_ROOT = "1-HobTrpU-5ZkG9y1zeMeTSiZS8Yc22xw";
