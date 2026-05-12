@@ -127,9 +127,9 @@ export default function StatoGiorno({ kits, gruppiTaglio, sistema }) {
   const showCuscini = !sistema || sistema === "cuscini";
   const showTaglio  = !sistema || sistema === "taglio";
 
-  // Costruisce lista unificata
+  // Costruisce lista unificata (escludi fuori_uso dalla lista principale)
   const tutti = [
-    ...(showCuscini ? kits.filter(k => k.stato !== "fuori_servizio").map(k => ({
+    ...(showCuscini ? kits.filter(k => k.stato !== "fuori_servizio" && k.stato !== "fuori_uso").map(k => ({
       id: k.id, tipo:"cuscini",
       nome: `Kit ${k.numero} — ${k.nome}`,
       sub: `${k.mezzo} · ${k.bar} bar · ${k.dislocazione}`,
@@ -138,7 +138,7 @@ export default function StatoGiorno({ kits, gruppiTaglio, sistema }) {
       giorni: giorniAllaScadenza(k.dataRevisione),
       onClick: () => navigate(`/kit/${k.id}`),
     })) : []),
-    ...(showTaglio ? gruppiTaglio.filter(g => g.stato !== "fuori_servizio").map(g => ({
+    ...(showTaglio ? gruppiTaglio.filter(g => g.stato !== "fuori_servizio" && g.stato !== "fuori_uso").map(g => ({
       id: g.id, tipo:"taglio",
       nome: g.nome,
       sub: `${g.mezzo} · ${g.sistema} · ${g.dislocazione}`,
@@ -223,6 +223,43 @@ export default function StatoGiorno({ kits, gruppiTaglio, sistema }) {
           bg="var(--gray-bg)"
           empty="—"
         />
+      )}
+
+      {/* FUORI USO — sezione separata */}
+      {(showCuscini ? kits.filter(k => k.stato === "fuori_uso") : []).concat(
+        showTaglio ? gruppiTaglio.filter(g => g.stato === "fuori_uso") : []
+      ).length > 0 && (
+        <div style={{
+          background:"#111", border:"1px solid #333",
+          borderRadius:"var(--radius)", overflow:"hidden", marginBottom:16,
+        }}>
+          <div style={{ background:"#222", padding:"10px 18px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div>
+              <div style={{ color:"#aaa", fontWeight:800, fontSize:14 }}>⛔ Fuori uso — dismessi definitivamente</div>
+              <div style={{ color:"#666", fontSize:11, marginTop:2 }}>Richiede documento di notifica allegato</div>
+            </div>
+          </div>
+          <div style={{ padding:12, display:"flex", flexDirection:"column", gap:8 }}>
+            {(showCuscini ? kits.filter(k => k.stato === "fuori_uso") : [])
+              .concat(showTaglio ? gruppiTaglio.filter(g => g.stato === "fuori_uso") : [])
+              .map((item, i) => {
+                const isKit = "dataRevisione" in item;
+                return (
+                  <div key={item.id} onClick={() => navigate(isKit ? `/kit/${item.id}` : `/gruppi-taglio/${item.id}`)}
+                    style={{ background:"#1a1a1a", border:"1px solid #333", borderRadius:"var(--radius-sm)", padding:"12px 14px", cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
+                    <span style={{ fontSize:18 }}>⛔</span>
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:13, color:"#888" }}>
+                        {isKit ? `Kit ${item.numero} — ${item.nome}` : item.nome}
+                      </div>
+                      <div style={{ fontSize:11, color:"#555", marginTop:2 }}>{item.mezzo} · {item.dislocazione}</div>
+                    </div>
+                    <span className="pill fuori_uso" style={{ marginLeft:"auto" }}>Fuori uso</span>
+                  </div>
+                );
+              })}
+          </div>
+        </div>
       )}
     </div>
   );
