@@ -7,7 +7,7 @@ import {
   aggiornaRevisionePianificata,
   deleteRevisionePianificata,
 } from "../firebase/service";
-import { calcolaStato, calcolaStatoGT, prossimaRevisioneGT, giorniAllaScadenza, formatData } from "../utils";
+import { calcolaStato, calcolaStatoGT, prossimaRevisioneGT, giorniAllaScadenza } from "../utils";
 
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
               "Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
@@ -336,7 +336,6 @@ export default function Calendario({ kits, gruppiTaglio }) {
             const isSel  = d && giornoPop && sameDay(d, giornoPop);
             const evs    = d ? getEventiGiorno(d) : [];
             const scs    = d ? getScadenzeGiorno(d) : [];
-            const haEv   = evs.length > 0 || scs.length > 0;
 
             return (
               <div key={i}
