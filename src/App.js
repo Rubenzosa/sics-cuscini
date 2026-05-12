@@ -17,6 +17,7 @@ import GruppiTaglioList from "./pages/GruppiTaglioList";
 import GruppiTaglioDetail from "./pages/GruppiTaglioDetail";
 import GruppiTaglioForm from "./pages/GruppiTaglioForm";
 import KanbanMezziTaglio from "./pages/KanbanMezziTaglio";
+import Calendario from "./pages/Calendario";
 
 // Firebase
 import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio } from "./firebase/service";
@@ -332,6 +333,7 @@ export default function App() {
               <Route path="/mezzi-taglio"               element={<KanbanMezziTaglio gruppi={gruppiTaglio}/>}/>
               {/* SCADENZE E DASHBOARD */}
               <Route path="/scadenze"   element={<Scadenze kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema}/>}/>
+              <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
               <Route path="/dashboard"  element={<Dashboard kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema} setSistema={setSistema}/>}/>
             </Routes>
           )}
@@ -347,11 +349,13 @@ export default function App() {
 function StoricoHub({ sistema, setSistema }) {
   const navigate = useNavigate();
   const voci = sistema === "cuscini" ? [
-    { label:"Scadenze",      desc:"Tutte le scadenze per urgenza",   icon:"📅", path:"/scadenze" },
+    { label:"Calendario",    desc:"Revisioni pianificate e scadenze",icon:"📅", path:"/calendario" },
+    { label:"Scadenze",      desc:"Tutte le scadenze per urgenza",   icon:"⏰", path:"/scadenze" },
     { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",icon:"🔄", path:"/rotazioni" },
     { label:"Dashboard",     desc:"Panoramica statistica completa",  icon:"📊", path:"/dashboard" },
   ] : [
-    { label:"Scadenze",      desc:"Tutte le scadenze per urgenza",   icon:"📅", path:"/scadenze" },
+    { label:"Calendario",    desc:"Revisioni pianificate e scadenze",icon:"📅", path:"/calendario" },
+    { label:"Scadenze",      desc:"Tutte le scadenze per urgenza",   icon:"⏰", path:"/scadenze" },
     { label:"Dashboard",     desc:"Panoramica statistica completa",  icon:"📊", path:"/dashboard" },
   ];
   return (

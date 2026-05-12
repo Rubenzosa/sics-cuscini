@@ -80,6 +80,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:10, background:badge.bg, color:badge.color }}>{badge.label}</span>
         </div>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+          <button className="btn btn-secondary" onClick={() => navigate("/calendario")}>📅 Calendario</button>
           <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
           <button className="btn btn-secondary" onClick={() => setModalMan(true)}>🔧 Manutenzione</button>
           <Link to={`/gruppi-taglio/${gt.id}/modifica`} className="btn btn-secondary">Modifica</Link>
@@ -87,6 +88,15 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
         </div>
       </div>
 
+      {stato==="fuori_uso" && (
+        <div style={{ background:"#1a1a1a", border:"1px solid #444", borderRadius:"var(--radius-sm)", padding:"12px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
+          <span style={{ fontSize:20 }}>⛔</span>
+          <div>
+            <div style={{ fontWeight:800, fontSize:14, color:"#aaa" }}>FUORI USO — definitivo</div>
+            <div style={{ fontSize:12, color:"#777", marginTop:2 }}>Kit dismesso definitivamente. Verificare documento di notifica nel tab Documenti.</div>
+          </div>
+        </div>
+      )}
       {stato==="scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>⚠ Revisione scaduta da {Math.abs(giorni)} giorni</div>}
       {stato==="critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>⏱ Revisione tra {giorni} giorni — pianifica</div>}
 
