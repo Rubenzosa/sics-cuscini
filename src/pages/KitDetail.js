@@ -56,7 +56,9 @@ function AllegatiUpload({ kitId }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef(null);
 
-  useEffect(() => { carica(); }, [kitId]);
+  useEffect(() => {
+    getAllegatiKit(kitId).then(setAllegati);
+  }, [kitId]);
 
   async function carica() {
     const docs = await getAllegatiKit(kitId);
