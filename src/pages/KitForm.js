@@ -292,7 +292,8 @@ export default function KitForm({ kits, reload }) {
               <select name="stato" value={form.stato} onChange={handleChange}>
                 <option value="attivo">Attivo</option>
                 <option value="magazzino">Magazzino</option>
-                <option value="fuori_servizio">Fuori servizio</option>
+                <option value="fuori_servizio">Fuori servizio (provvisorio)</option>
+                <option value="fuori_uso">Fuori uso (definitivo)</option>
               </select>
             </div>
             <div className="form-group">

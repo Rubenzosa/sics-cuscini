@@ -89,11 +89,16 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
       </div>
 
       {stato==="fuori_uso" && (
-        <div style={{ background:"#1a1a1a", border:"1px solid #444", borderRadius:"var(--radius-sm)", padding:"12px 16px", marginBottom:16, display:"flex", alignItems:"center", gap:12 }}>
-          <span style={{ fontSize:20 }}>⛔</span>
-          <div>
-            <div style={{ fontWeight:800, fontSize:14, color:"#aaa" }}>FUORI USO — definitivo</div>
-            <div style={{ fontSize:12, color:"#777", marginTop:2 }}>Kit dismesso definitivamente. Verificare documento di notifica nel tab Documenti.</div>
+        <div style={{ background:"#1a1a1a", border:"2px solid #e24b4a", borderRadius:"var(--radius-sm)", padding:"14px 18px", marginBottom:16 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+            <span style={{ fontSize:22 }}>⛔</span>
+            <div>
+              <div style={{ fontWeight:800, fontSize:15, color:"#e24b4a" }}>FUORI USO — dismesso definitivamente</div>
+              <div style={{ fontSize:12, color:"#777", marginTop:2 }}>Allegare il documento di notifica qui sotto.</div>
+            </div>
+          </div>
+          <div style={{ background:"#111", borderRadius:"var(--radius-sm)", padding:12 }}>
+            <Documenti kitId={gt.id} kitNome={gt.nome} sistema="taglio"/>
           </div>
         </div>
       )}
