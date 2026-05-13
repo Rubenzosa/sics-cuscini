@@ -768,7 +768,6 @@ export default function Rotazioni({ kits, reload }) {
 // ── SELEZIONE MANUALE ───────────────────────────────────────
 function ManualSelector({ kits, onInvia }) {
   const [selezionati, setSelezionati] = useState([]);
-  const [tutti_, setTutti] = useState(false);
 
   const candidati = kits
     .filter(k => k.stato === "attivo" && k.dataRevisione)
