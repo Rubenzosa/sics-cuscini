@@ -19,7 +19,7 @@ import KanbanMezziTaglio from "./pages/KanbanMezziTaglio";
 import Calendario from "./pages/Calendario";
 
 // Firebase
-import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio } from "./firebase/service";
+import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio, resetAndSeedGruppiTaglio } from "./firebase/service";
 import { kitData } from "./data/kitData";
 import { gruppiTaglioData } from "./data/gruppiTaglioData";
 import { calcolaStato, calcolaStatoGT } from "./utils";

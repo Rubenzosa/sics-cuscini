@@ -336,3 +336,14 @@ export async function aggiornaRevisionePianificata(id, data) {
 export async function deleteRevisionePianificata(id) {
   await deleteDoc(doc(db, PLAN, id));
 }
+
+// Cancella tutti i gruppi taglio da Firestore e ri-esegue il seed
+export async function resetAndSeedGruppiTaglio(gruppi) {
+  const snap = await getDocs(collection(db, "gruppi_taglio"));
+  const deletes = snap.docs.map(d => deleteDoc(doc(db, "gruppi_taglio", d.id)));
+  await Promise.all(deletes);
+  for (const gt of gruppi) {
+    const { id, ...data } = gt;
+    await setDoc(doc(db, "gruppi_taglio", id), data);
+  }
+}
