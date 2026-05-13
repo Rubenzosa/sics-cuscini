@@ -1,0 +1,5 @@
+Analizza i codici del repository e comprendi il funzionamento.
+
+RIPORTA LE SEGUENTI MODIFICHE:
+1. il kit 12 e il kit 2 sono due kit separati, fai in modo che non siano lo stesso kit come adesso.
+2. aggiungi lo stato FUORI USO insieme alla ttuali ATTIVO, MAGAZZINO, FUORI SERVIZIO. Fuori Uso serve ad indicare un kit non piu in uso, non risulta tra i kit ma e' presente in modo differenziato, serve come storico. Inoltre FUORI USO deve avere la possibilita di caricare file, jpg o pdf come allegato.
