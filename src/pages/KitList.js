@@ -127,7 +127,10 @@ export default function KitList({ kits, reload }) {
 
   const hasFiltri = filtroSede.length||filtroBar.length||filtroMarca.length;
 
-  const filtrati = useMemo(() => kits.filter(kit => {
+  const attivi = kits.filter(k => k.stato !== 'fuori_uso');
+  const fuoriUso = kits.filter(k => k.stato === 'fuori_uso');
+
+  const filtrati = useMemo(() => attivi.filter(kit => {
     const stato = calcolaStato(kit);
     const mS = filtroStato==="tutti"
       || (filtroStato==="critici"  && ["scaduto","critico","attenzione"].includes(stato))
@@ -142,10 +145,10 @@ export default function KitList({ kits, reload }) {
     const mQ = !q || [String(kit.numero),kit.nome,kit.mezzo,kit.dislocazione,String(kit.bar)].some(v=>v&&v.toLowerCase().includes(q))
       || (kit.componenti||[]).some(c=>[c.modello,c.matricola,c.matricolaLucca].some(v=>v&&v.toLowerCase().includes(q)));
     return mS&&mBar&&mSede&&mMarca&&mQ;
-  }), [kits,search,filtroStato,filtroSede,filtroBar,filtroMarca]);
+  }), [attivi,search,filtroStato,filtroSede,filtroBar,filtroMarca]);
 
   function countStato(s) {
-    return kits.filter(k=>{
+    return attivi.filter(k=>{
       const st=calcolaStato(k);
       if(s==="critici")   return ["scaduto","critico","attenzione"].includes(st);
       if(s==="regolari")  return ["buono","regolare"].includes(st);
@@ -231,7 +234,7 @@ export default function KitList({ kits, reload }) {
       {/* Risultati */}
       <div style={{fontSize:13,color:"var(--text3)",marginBottom:12}}>
         {filtrati.length} {filtrati.length===1?"kit":"kit"} trovati
-        {filtrati.length!==kits.length?` su ${kits.length} totali`:""}
+        {filtrati.length!==attivi.length?` su ${attivi.length} attivi`:""}
       </div>
 
       {/* KANBAN GRID */}
@@ -248,6 +251,34 @@ export default function KitList({ kits, reload }) {
               <KitCard key={kit.id} kit={kit} onClick={()=>navigate(`/kit/${kit.id}`)}/>
             ))}
         </div>
+      )}
+      {fuoriUso.length > 0 && (
+        <details style={{marginTop:24}}>
+          <summary style={{
+            cursor:"pointer", padding:"10px 16px",
+            background:"#1a1a1a", border:"1px solid #333",
+            borderRadius:"var(--radius-sm)", color:"#888",
+            fontSize:13, fontWeight:700, listStyle:"none",
+            display:"flex", alignItems:"center", gap:8,
+          }}>
+            <span>⛔</span>
+            <span>Fuori uso — dismessi definitivamente ({fuoriUso.length})</span>
+            <span style={{marginLeft:"auto",fontSize:11}}>clicca per espandere ▼</span>
+          </summary>
+          <div style={{marginTop:8,display:"flex",flexDirection:"column",gap:8}}>
+            {fuoriUso.map(kit=>(
+              <div key={kit.id} onClick={()=>navigate(`/kit/${kit.id}`)}
+                style={{display:"flex",alignItems:"center",gap:12,padding:"10px 16px",background:"#1a1a1a",border:"1px solid #333",borderRadius:"var(--radius-sm)",cursor:"pointer"}}>
+                <span style={{fontSize:16}}>⛔</span>
+                <div>
+                  <div style={{fontWeight:700,fontSize:13,color:"#888"}}>Kit {kit.numero} — {kit.nome}</div>
+                  <div style={{fontSize:11,color:"#555"}}>{kit.mezzo} · {kit.bar} bar · {kit.dislocazione}</div>
+                </div>
+                <span className="pill fuori_uso" style={{marginLeft:"auto"}}>Fuori uso</span>
+              </div>
+            ))}
+          </div>
+        </details>
       )}
     </div>
   );

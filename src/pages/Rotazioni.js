@@ -768,6 +768,7 @@ export default function Rotazioni({ kits, reload }) {
 // ── SELEZIONE MANUALE ───────────────────────────────────────
 function ManualSelector({ kits, onInvia }) {
   const [selezionati, setSelezionati] = useState([]);
+  const [tutti_, setTutti] = useState(false);
 
   const candidati = kits
     .filter(k => k.stato === "attivo" && k.dataRevisione)
@@ -777,7 +778,7 @@ function ManualSelector({ kits, onInvia }) {
     setSelezionati(prev => {
       const exists = prev.find(k => k.id === kit.id);
       if (exists) return prev.filter(k => k.id !== kit.id);
-      if (prev.length >= 3) { alert("Massimo 3 kit per gruppo"); return prev; }
+      // Nessun limite massimo
       return [...prev, kit];
     });
   }
@@ -836,10 +837,10 @@ function ManualSelector({ kits, onInvia }) {
           </div>
         );
       })}
-      {selezionati.length >= 2 && (
+      {selezionati.length >= 1 && (
         <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 14 }}>
           <button className="btn btn-primary" onClick={() => onInvia(selezionati)}>
-            Invia {selezionati.length} kit selezionati →
+            Invia {selezionati.length} {selezionati.length===1?"kit":"kit"} selezionati →
           </button>
         </div>
       )}

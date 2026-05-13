@@ -202,14 +202,14 @@ export default function App() {
     { to:"/da-fare",   label:"Da fare",    badge: daFareTotali },
     { to:"/kit",       label:"Kit" },
     { to:"/mezzi",     label:"Mezzi" },
-    { to:"/storico",   label:"Archivio" },
+    { to:"/archivio",  label:"Archivio" },
   ];
   const navTaglio = [
     { to:"/",          label:"Stato",      end:true },
     { to:"/da-fare",   label:"Da fare",    badge: daFareTotali },
     { to:"/gruppi-taglio", label:"Kit" },
     { to:"/mezzi-taglio",  label:"Mezzi" },
-    { to:"/storico",   label:"Archivio" },
+    { to:"/archivio",  label:"Archivio" },
   ];
   const navItems = sistema === "taglio" ? navTaglio : navCuscini;
 
@@ -351,6 +351,7 @@ function StoricoHub({ sistema, setSistema }) {
     { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",  icon:"🔄", path:"/rotazioni" },
   ] : [
     { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"📅", path:"/calendario" },
+    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",   icon:"🔄", path:"/rotazioni" },
   ];
   return (
     <div>

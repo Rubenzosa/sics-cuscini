@@ -1,5 +1,6 @@
 export function calcolaStato(kit) {
   if (kit.stato === "fuori_servizio") return "fuori_servizio";
+  if (kit.stato === "fuori_uso")      return "fuori_uso";
   if (kit.stato === "magazzino") return "magazzino";
   if (!kit.dataRevisione) return "senza_data";
   const oggi = new Date();
@@ -188,14 +189,14 @@ export function calcolaPianoRevisione(kits) {
     }
   });
 
-  // Prova a formare 2-3 gruppi ottimali
+  // Prova a formare gruppi ottimali senza limite massimo
   for (let tentativo = 0; tentativo < 3 && usati.size < candidati.length; tentativo++) {
     const gruppo    = [];
     const sediUsate = new Set();
 
     for (const kit of candidati) {
       if (usati.has(kit.id)) continue;
-      if (gruppo.length >= 3) break;
+      // Nessun limite massimo per gruppo
 
       const sede   = kit.dislocazione || "Sede Centrale";
       const attivi = kittiviPerSede[sede] || 0;
@@ -294,6 +295,7 @@ export function calcolaCopertura(kits) {
 
 export function calcolaStatoGT(gt) {
   if (gt.stato === "fuori_servizio") return "fuori_servizio";
+  if (gt.stato === "fuori_uso")      return "fuori_uso";
   if (gt.stato === "magazzino")      return "magazzino";
   if (gt.stato === "in_revisione")   return "in_revisione";
 
