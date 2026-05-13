@@ -14,19 +14,18 @@ function RingIndicator({ giorni, stato }) {
   else if (stato === "buono")      { pct = 0.70; color = "#639922"; }
   else if (stato === "regolare")   { pct = 1;    color = "#639922"; }
   else { pct = 0.5; color = "#888"; }
-  
   const offset = circ * (1 - pct);
-  
   // Abbrevia testo lungo: 135g → 135g su due righe o testo ridotto
   const abs = Math.abs(giorni ?? 0);
   const label = giorni === null ? "N/D"
-    : giorni < 0  ? `${abs}gg\nfa`
+    : giorni < 0  ? `${abs}gg
+fa`
     : giorni > 999 ? "OK"
-    : giorni > 99  ? `${giorni}\ngg`
+    : giorni > 99  ? `${giorni}
+gg`
     : `${giorni}g`;
   const lines = label.split("\n");
   const fs = abs > 99 ? 8 : 10;
-  
   return (
     <div style={{
       position: "relative",
@@ -56,7 +55,7 @@ function RingIndicator({ giorni, stato }) {
         {lines.map((l, i) => (
           <span key={i} style={{ fontSize: fs, fontWeight: 800, color }}>{l}</span>
         ))}
-      </div> {/* <--- ERRORE CORRETTO: Qui c'era </span> invece di </div> */}
+      </div>
     </div>
   );
 }

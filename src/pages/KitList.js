@@ -2,138 +2,156 @@ import React, { useState, useMemo } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { calcolaStato, statoLabel, formatData, giorniAllaScadenza } from "../utils";
 
-// Estrae valori unici da tutti i kit per i filtri avanzati
 function useFilterOptions(kits) {
-  return useMemo(() => {
-    const bar       = [...new Set(kits.map(k => k.bar).filter(Boolean))].sort((a,b) => a-b);
-    const sedi      = [...new Set(kits.map(k => k.dislocazione).filter(Boolean))].sort();
-    const marche    = [...new Set(
-      kits.flatMap(k => (k.componenti||[]).map(c => {
-        // Estrai solo il nome marca principale (prima parola)
-        const m = c.modello || "";
-        return m.split(" ")[0];
-      })).filter(Boolean)
-    )].sort();
-    const tipiComp  = [...new Set(
-      kits.flatMap(k => (k.componenti||[]).map(c => c.tipo).filter(Boolean))
-    )].sort();
-    const anni      = [...new Set(kits.map(k => k.annoAcquisto).filter(Boolean))].sort();
-    return { bar, sedi, marche, tipiComp, anni };
-  }, [kits]);
+  return useMemo(() => ({
+    bar:    [...new Set(kits.map(k => k.bar).filter(Boolean))].sort((a,b)=>a-b),
+    sedi:   [...new Set(kits.map(k => k.dislocazione).filter(Boolean))].sort(),
+    marche: [...new Set(kits.flatMap(k=>(k.componenti||[]).map(c=>(c.modello||"").split(" ")[0])).filter(Boolean))].sort(),
+  }), [kits]);
 }
 
-// Chip filtro con conteggio
-function FiltroChip({ label, count, active, onClick }) {
+function Ring({ giorni, stato }) {
+  const size = 52, r = 20, circ = 2 * Math.PI * r;
+  let pct = 1, color = "#639922";
+  if (stato==="scaduto")         { pct=0;    color="#e24b4a"; }
+  else if (stato==="critico")    { pct=0.08; color="#e24b4a"; }
+  else if (stato==="attenzione") { pct=0.35; color="#ba7517"; }
+  else if (stato==="buono")      { pct=0.70; color="#639922"; }
+  else if (stato==="regolare")   { pct=1;    color="#639922"; }
+  else { pct=0.5; color="#888"; }
+  const offset = circ*(1-pct);
+  const abs = Math.abs(giorni??0);
+  const label = giorni===null?"N/D":giorni<0?`${abs}\nfa`:giorni>999?"OK":giorni>99?`${giorni}\ngg`:`${giorni}g`;
+  const lines = label.split("\n");
+  const fs = abs>99?8:10;
   return (
-    <button
-      className={`filter-chip ${active ? "active" : ""}`}
-      onClick={onClick}
-      style={{ display: "flex", alignItems: "center", gap: 5 }}
-    >
-      {label}
-      {count !== undefined && (
-        <span style={{
-          fontSize: 10, fontWeight: 800,
-          background: active ? "rgba(255,255,255,0.25)" : "var(--border)",
-          color: active ? "#fff" : "var(--text3)",
-          padding: "1px 5px", borderRadius: 10,
-          minWidth: 18, textAlign: "center",
+    <div style={{position:"relative",width:size,height:size,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{position:"absolute",top:0,left:0,transform:"rotate(-90deg)"}}>
+        <circle fill="none" stroke="var(--border)" strokeWidth="3.5" cx={size/2} cy={size/2} r={r}/>
+        <circle fill="none" stroke={color} strokeWidth="3.5" strokeLinecap="round" cx={size/2} cy={size/2} r={r} strokeDasharray={circ} strokeDashoffset={offset}/>
+      </svg>
+      <div style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",lineHeight:1.1}}>
+        {lines.map((l,i)=><span key={i} style={{fontSize:fs,fontWeight:800,color}}>{l}</span>)}
+      </div>
+    </div>
+  );
+}
+
+// Card kanban per singolo kit
+function KitCard({ kit, onClick }) {
+  const stato  = calcolaStato(kit);
+  const giorni = giorniAllaScadenza(kit.dataRevisione);
+  const borderColor = stato==="scaduto"||stato==="critico"?"var(--red)":stato==="attenzione"?"var(--amber)":stato==="buono"||stato==="regolare"?"var(--green)":"var(--border)";
+
+  // Matricole Lucca dal primo componente di ogni tipo
+  const lucca = (kit.componenti||[])
+    .filter(c => c.matricolaLucca)
+    .slice(0,3)
+    .map(c => c.matricolaLucca);
+
+  return (
+    <div onClick={onClick} style={{
+      background:"var(--bg2)", border:`1px solid var(--border)`,
+      borderTop:`4px solid ${borderColor}`,
+      borderRadius:"var(--radius-sm)", padding:"14px 16px",
+      cursor:"pointer", transition:"transform .15s, box-shadow .15s",
+      boxShadow:"var(--shadow)",
+    }}
+    onMouseOver={e=>{e.currentTarget.style.transform="translateY(-2px)";e.currentTarget.style.boxShadow="0 6px 20px rgba(0,0,0,.12)";}}
+    onMouseOut={e=>{e.currentTarget.style.transform="none";e.currentTarget.style.boxShadow="var(--shadow)";}}>
+
+      {/* Header: numero kit + ring */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div style={{
+          fontSize:28, fontWeight:900, color:"var(--accent)",
+          lineHeight:1, letterSpacing:"-0.5px",
         }}>
-          {count}
-        </span>
+          {kit.numero}
+        </div>
+        <Ring giorni={giorni} stato={stato}/>
+      </div>
+
+      {/* Nome mezzo */}
+      <div style={{fontWeight:700,fontSize:14,color:"var(--text)",marginBottom:4}}>{kit.nome}</div>
+      <div style={{fontSize:12,color:"var(--text3)",fontFamily:"monospace",marginBottom:6}}>{kit.mezzo}</div>
+
+      {/* Info rapide */}
+      <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
+        <span style={{fontSize:11,fontWeight:700,color:"var(--text2)"}}>{kit.bar} bar</span>
+        <span style={{fontSize:11,color:"var(--text3)"}}>·</span>
+        <span style={{fontSize:11,color:"var(--text3)"}}>{kit.dislocazione}</span>
+      </div>
+
+      {/* Matricole Lucca — in evidenza */}
+      {lucca.length > 0 && (
+        <div style={{display:"flex",flexWrap:"wrap",gap:4,marginBottom:8}}>
+          {lucca.map((m,i)=>(
+            <span key={i} style={{
+              fontFamily:"monospace",fontWeight:800,fontSize:10,
+              color:"var(--blue-text)",background:"var(--blue-bg)",
+              padding:"2px 6px",borderRadius:4,
+            }}>{m}</span>
+          ))}
+          {(kit.componenti||[]).filter(c=>c.matricolaLucca).length > 3 && (
+            <span style={{fontSize:10,color:"var(--text3)"}}>+{(kit.componenti||[]).filter(c=>c.matricolaLucca).length-3}</span>
+          )}
+        </div>
       )}
-    </button>
+
+      {/* Stato + data revisione */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
+        <span style={{fontSize:10,color:"var(--text3)"}}>{formatData(kit.dataRevisione)}</span>
+      </div>
+    </div>
   );
 }
 
 export default function KitList({ kits, reload }) {
   const navigate = useNavigate();
-  const [search,      setSearch]      = useState("");
+  const [search, setSearch]           = useState("");
   const [filtroStato, setFiltroStato] = useState("tutti");
-  const [filtroBar,   setFiltroBar]   = useState([]);
-  const [filtroSede,  setFiltroSede]  = useState([]);
+  const [filtroSede, setFiltroSede]   = useState([]);
+  const [filtroBar, setFiltroBar]     = useState([]);
   const [filtroMarca, setFiltroMarca] = useState([]);
-  const [filtroTipo,  setFiltroTipo]  = useState([]);
-  const [filtroAnno,  setFiltroAnno]  = useState([]);
-  const [showFiltri,  setShowFiltri]  = useState(false);
+  const [showFiltri, setShowFiltri]   = useState(false);
 
   const opts = useFilterOptions(kits);
 
-  // Toggle valore in array filtro
   function toggle(setter, val) {
-    setter(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
+    setter(prev => prev.includes(val) ? prev.filter(v=>v!==val) : [...prev,val]);
   }
-
-  // Reset tutti i filtri avanzati
   function resetFiltri() {
-    setFiltroBar([]); setFiltroSede([]);
-    setFiltroMarca([]); setFiltroTipo([]); setFiltroAnno([]);
-    setSearch("");
+    setFiltroSede([]); setFiltroBar([]); setFiltroMarca([]); setSearch("");
   }
 
-  const hasFiltriAvanzati = filtroBar.length || filtroSede.length ||
-    filtroMarca.length || filtroTipo.length || filtroAnno.length;
+  const hasFiltri = filtroSede.length||filtroBar.length||filtroMarca.length;
 
-  const filtrati = useMemo(() => {
-    return kits.filter(kit => {
-      const stato = calcolaStato(kit);
+  const filtrati = useMemo(() => kits.filter(kit => {
+    const stato = calcolaStato(kit);
+    const mS = filtroStato==="tutti"
+      || (filtroStato==="critici"  && ["scaduto","critico","attenzione"].includes(stato))
+      || (filtroStato==="regolari" && ["buono","regolare"].includes(stato))
+      || (filtroStato==="fuori"    && kit.stato==="fuori_servizio")
+      || (filtroStato==="fuori_uso"&& kit.stato==="fuori_uso")
+      || (filtroStato==="magazzino"&& kit.stato==="magazzino");
+    const mBar  = !filtroBar.length  || filtroBar.includes(kit.bar);
+    const mSede = !filtroSede.length || filtroSede.includes(kit.dislocazione);
+    const mMarca= !filtroMarca.length|| (kit.componenti||[]).some(c=>filtroMarca.some(m=>(c.modello||"").toUpperCase().includes(m.toUpperCase())));
+    const q = search.toLowerCase().trim();
+    const mQ = !q || [String(kit.numero),kit.nome,kit.mezzo,kit.dislocazione,String(kit.bar)].some(v=>v&&v.toLowerCase().includes(q))
+      || (kit.componenti||[]).some(c=>[c.modello,c.matricola,c.matricolaLucca].some(v=>v&&v.toLowerCase().includes(q)));
+    return mS&&mBar&&mSede&&mMarca&&mQ;
+  }), [kits,search,filtroStato,filtroSede,filtroBar,filtroMarca]);
 
-      // ── Filtro stato ──
-      const matchStato =
-        filtroStato === "tutti" ||
-        (filtroStato === "critici"  && (stato === "scaduto" || stato === "critico" || stato === "attenzione")) ||
-        (filtroStato === "regolari" && (stato === "buono" || stato === "regolare")) ||
-        (filtroStato === "revisione"&& kit.stato === "in_revisione") ||
-        (filtroStato === "fuori"    && (kit.stato === "fuori_servizio" || kit.stato === "magazzino"));
-
-      // ── Filtro bar ──
-      const matchBar = !filtroBar.length || filtroBar.includes(kit.bar);
-
-      // ── Filtro sede ──
-      const matchSede = !filtroSede.length || filtroSede.includes(kit.dislocazione);
-
-      // ── Filtro marca (sui componenti) ──
-      const matchMarca = !filtroMarca.length || (kit.componenti || []).some(c =>
-        filtroMarca.some(m => (c.modello || "").toUpperCase().includes(m.toUpperCase()))
-      );
-
-      // ── Filtro tipo componente ──
-      const matchTipo = !filtroTipo.length || (kit.componenti || []).some(c =>
-        filtroTipo.includes(c.tipo)
-      );
-
-      // ── Filtro anno acquisto ──
-      const matchAnno = !filtroAnno.length || filtroAnno.includes(kit.annoAcquisto);
-
-      // ── Ricerca testo libero ──
-      const q = search.toLowerCase().trim();
-      const matchSearch = !q ||
-        String(kit.numero).includes(q) ||
-        (kit.nome || "").toLowerCase().includes(q) ||
-        (kit.mezzo || "").toLowerCase().includes(q) ||
-        (kit.tipoMezzo || "").toLowerCase().includes(q) ||
-        (kit.dislocazione || "").toLowerCase().includes(q) ||
-        String(kit.bar).includes(q) ||
-        (kit.componenti || []).some(c =>
-          (c.modello     || "").toLowerCase().includes(q) ||
-          (c.matricola   || "").toLowerCase().includes(q) ||
-          (c.matricolaLucca || "").toLowerCase().includes(q) ||
-          (c.tipo        || "").toLowerCase().includes(q)
-        );
-
-      return matchStato && matchBar && matchSede &&
-             matchMarca && matchTipo && matchAnno && matchSearch;
-    });
-  }, [kits, search, filtroStato, filtroBar, filtroSede, filtroMarca, filtroTipo, filtroAnno]);
-
-  // Conteggi per chip stato
   function countStato(s) {
-    return kits.filter(k => {
-      const st = calcolaStato(k);
-      if (s === "critici")  return st === "scaduto" || st === "critico" || st === "attenzione";
-      if (s === "regolari") return st === "buono" || st === "regolare";
-      if (s === "revisione")return k.stato === "in_revisione";
-      if (s === "fuori")    return k.stato === "fuori_servizio" || k.stato === "magazzino";
+    return kits.filter(k=>{
+      const st=calcolaStato(k);
+      if(s==="critici")   return ["scaduto","critico","attenzione"].includes(st);
+      if(s==="regolari")  return ["buono","regolare"].includes(st);
+      if(s==="fuori")     return k.stato==="fuori_servizio";
+      if(s==="fuori_uso") return k.stato==="fuori_uso";
+      if(s==="magazzino") return k.stato==="magazzino";
       return true;
     }).length;
   }
@@ -141,317 +159,96 @@ export default function KitList({ kits, reload }) {
   return (
     <div>
       <div className="page-header">
-        <h1 className="page-title">Kit cuscini</h1>
+        <h1 className="page-title">Kit cuscini ({filtrati.length})</h1>
         <Link to="/kit/nuovo" className="btn btn-primary">+ Nuovo kit</Link>
       </div>
 
-      {/* ── BARRA RICERCA ── */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 10, flexWrap: "wrap" }}>
-        <div style={{ position: "relative", flex: 1, minWidth: 200 }}>
-          <span style={{
-            position: "absolute", left: 12, top: "50%",
-            transform: "translateY(-50%)", color: "var(--text3)", fontSize: 14,
-            pointerEvents: "none",
-          }}>⌕</span>
-          <input
-            className="search-input"
-            style={{ paddingLeft: 34 }}
-            placeholder="Cerca kit, targa, matricola, modello..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-          />
-        </div>
-        <button
-          className={`btn ${showFiltri ? "btn-primary" : "btn-secondary"}`}
-          onClick={() => setShowFiltri(s => !s)}
-          style={{ position: "relative" }}
-        >
-          ⚙ Filtri avanzati
-          {hasFiltriAvanzati ? (
-            <span style={{
-              position: "absolute", top: -6, right: -6,
-              background: "var(--red)", color: "#fff",
-              fontSize: 10, fontWeight: 800,
-              width: 18, height: 18, borderRadius: "50%",
-              display: "flex", alignItems: "center", justifyContent: "center",
-            }}>
-              {[filtroBar, filtroSede, filtroMarca, filtroTipo, filtroAnno]
-                .reduce((s, a) => s + a.length, 0)}
-            </span>
-          ) : null}
-        </button>
-        {hasFiltriAvanzati && (
-          <button className="btn btn-secondary" onClick={resetFiltri}
-            style={{ color: "var(--red-text)", borderColor: "#f7c1c1" }}>
-            ✕ Reset filtri
-          </button>
-        )}
+      {/* Ricerca */}
+      <div style={{position:"relative",marginBottom:10}}>
+        <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",color:"var(--text3)",fontSize:16,pointerEvents:"none"}}>⌕</span>
+        <input className="search-input" style={{paddingLeft:40,fontSize:14}}
+          placeholder="Cerca per numero, nome, matricola Lucca, modello..."
+          value={search} onChange={e=>setSearch(e.target.value)}/>
       </div>
 
-      {/* ── CHIP STATO ── */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 12, flexWrap: "wrap" }}>
-        {[
-          ["tutti",    "Tutti"],
-          ["critici",  "Critici"],
-          ["regolari", "In regola"],
-          ["revisione","In revisione"],
-          ["fuori",    "Fuori servizio"],
-        ].map(([key, label]) => (
-          <FiltroChip
-            key={key}
-            label={label}
-            count={key !== "tutti" ? countStato(key) : undefined}
-            active={filtroStato === key}
-            onClick={() => setFiltroStato(key)}
-          />
+      {/* Chip stato */}
+      <div style={{display:"flex",gap:6,marginBottom:8,flexWrap:"wrap"}}>
+        {[["tutti","Tutti"],["critici","Critici"],["regolari","In regola"],["fuori","F. Servizio"],["fuori_uso","Fuori uso"],["magazzino","Magazzino"]].map(([key,label])=>(
+          <button key={key} className={`filter-chip ${filtroStato===key?"active":""}`}
+            onClick={()=>setFiltroStato(key)}>
+            {label}{key!=="tutti"?` (${countStato(key)})`:""}
+          </button>
         ))}
       </div>
 
-      {/* ── CHIP DISLOCAZIONE RAPIDA ── */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 11, fontWeight: 800, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em", marginRight: 4 }}>
-          Sede:
-        </span>
-        <FiltroChip
-          label="Tutte"
-          active={filtroSede.length === 0}
-          onClick={() => setFiltroSede([])}
-        />
-        {opts.sedi.map(s => {
-          const cnt = kits.filter(k => k.dislocazione === s).length;
-          return (
-            <FiltroChip
-              key={s}
-              label={s}
-              count={cnt}
-              active={filtroSede.includes(s)}
-              onClick={() => toggle(setFiltroSede, s)}
-            />
-          );
-        })}
+      {/* Sede */}
+      <div style={{display:"flex",gap:6,marginBottom:10,flexWrap:"wrap",alignItems:"center"}}>
+        <span style={{fontSize:11,fontWeight:800,color:"var(--text3)",textTransform:"uppercase",letterSpacing:".05em"}}>Sede:</span>
+        <button className={`filter-chip ${filtroSede.length===0?"active":""}`} onClick={()=>setFiltroSede([])}>Tutte</button>
+        {opts.sedi.map(s=>(
+          <button key={s} className={`filter-chip ${filtroSede.includes(s)?"active":""}`}
+            onClick={()=>toggle(setFiltroSede,s)}>
+            {s} ({kits.filter(k=>k.dislocazione===s).length})
+          </button>
+        ))}
+        <button className={`btn btn-sm ${showFiltri?"btn-primary":"btn-secondary"}`}
+          style={{marginLeft:"auto"}} onClick={()=>setShowFiltri(s=>!s)}>
+          ⚙ Filtri{hasFiltri?` (${[filtroBar,filtroMarca].reduce((s,a)=>s+a.length,0)})`:""}
+        </button>
       </div>
 
-      {/* ── PANNELLO FILTRI AVANZATI ── */}
+      {/* Filtri avanzati */}
       {showFiltri && (
-        <div className="card" style={{ marginBottom: 14, padding: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: 16 }}>
-
-            {/* Bar */}
+        <div className="card" style={{marginBottom:12,padding:14}}>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(180px,1fr))",gap:14}}>
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
-                Pressione (bar)
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {opts.bar.map(b => {
-                  const cnt = kits.filter(k => k.bar === b).length;
-                  return (
-                    <FiltroChip
-                      key={b}
-                      label={`${b} bar`}
-                      count={cnt}
-                      active={filtroBar.includes(b)}
-                      onClick={() => toggle(setFiltroBar, b)}
-                    />
-                  );
-                })}
+              <div style={{fontSize:11,fontWeight:800,color:"var(--text3)",textTransform:"uppercase",marginBottom:6}}>Bar</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {opts.bar.map(b=>(
+                  <button key={b} className={`filter-chip ${filtroBar.includes(b)?"active":""}`}
+                    onClick={()=>toggle(setFiltroBar,b)}>
+                    {b} bar ({kits.filter(k=>k.bar===b).length})
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Sede */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
-                Dislocazione
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {opts.sedi.map(s => {
-                  const cnt = kits.filter(k => k.dislocazione === s).length;
-                  return (
-                    <FiltroChip
-                      key={s}
-                      label={s}
-                      count={cnt}
-                      active={filtroSede.includes(s)}
-                      onClick={() => toggle(setFiltroSede, s)}
-                    />
-                  );
-                })}
+              <div style={{fontSize:11,fontWeight:800,color:"var(--text3)",textTransform:"uppercase",marginBottom:6}}>Marca</div>
+              <div style={{display:"flex",gap:5,flexWrap:"wrap"}}>
+                {opts.marche.map(m=>(
+                  <button key={m} className={`filter-chip ${filtroMarca.includes(m)?"active":""}`}
+                    onClick={()=>toggle(setFiltroMarca,m)}>
+                    {m}
+                  </button>
+                ))}
               </div>
             </div>
-
-            {/* Marca */}
-            <div style={{ gridColumn: "span 2" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
-                Marca componenti
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {opts.marche.map(m => {
-                  const cnt = kits.filter(k =>
-                    (k.componenti||[]).some(c => (c.modello||"").toUpperCase().includes(m.toUpperCase()))
-                  ).length;
-                  return (
-                    <FiltroChip
-                      key={m}
-                      label={m}
-                      count={cnt}
-                      active={filtroMarca.includes(m)}
-                      onClick={() => toggle(setFiltroMarca, m)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Tipo componente */}
-            <div style={{ gridColumn: "span 2" }}>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
-                Tipo componente
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {opts.tipiComp.map(t => {
-                  const cnt = kits.filter(k =>
-                    (k.componenti||[]).some(c => c.tipo === t)
-                  ).length;
-                  return (
-                    <FiltroChip
-                      key={t}
-                      label={t}
-                      count={cnt}
-                      active={filtroTipo.includes(t)}
-                      onClick={() => toggle(setFiltroTipo, t)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Anno acquisto */}
-            <div>
-              <div style={{ fontSize: 11, fontWeight: 800, color: "var(--text3)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 8 }}>
-                Anno acquisto
-              </div>
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {opts.anni.map(a => {
-                  const cnt = kits.filter(k => k.annoAcquisto === a).length;
-                  return (
-                    <FiltroChip
-                      key={a}
-                      label={String(a)}
-                      count={cnt}
-                      active={filtroAnno.includes(a)}
-                      onClick={() => toggle(setFiltroAnno, a)}
-                    />
-                  );
-                })}
-              </div>
-            </div>
-
           </div>
+          {hasFiltri && <button className="btn btn-secondary" style={{marginTop:10,fontSize:12,color:"var(--red-text)"}} onClick={resetFiltri}>✕ Reset filtri</button>}
         </div>
       )}
 
-      {/* ── RIEPILOGO FILTRI ATTIVI ── */}
-      {hasFiltriAvanzati && (
-        <div style={{
-          display: "flex", alignItems: "center", gap: 8, marginBottom: 10,
-          fontSize: 12, color: "var(--text2)", flexWrap: "wrap",
-        }}>
-          <span style={{ fontWeight: 700 }}>Filtri attivi:</span>
-          {filtroBar.map(b    => <span key={b}    style={tagStyle}>{b} bar</span>)}
-          {filtroSede.map(s   => <span key={s}    style={tagStyle}>{s}</span>)}
-          {filtroMarca.map(m  => <span key={m}    style={tagStyle}>{m}</span>)}
-          {filtroTipo.map(t   => <span key={t}    style={tagStyle}>{t}</span>)}
-          {filtroAnno.map(a   => <span key={a}    style={tagStyle}>{a}</span>)}
+      {/* Risultati */}
+      <div style={{fontSize:13,color:"var(--text3)",marginBottom:12}}>
+        {filtrati.length} {filtrati.length===1?"kit":"kit"} trovati
+        {filtrati.length!==kits.length?` su ${kits.length} totali`:""}
+      </div>
+
+      {/* KANBAN GRID */}
+      {!filtrati.length ? (
+        <div style={{textAlign:"center",padding:40,color:"var(--text3)",fontSize:14}}>
+          Nessun kit trovato.{" "}
+          {hasFiltri&&<button className="card-action" onClick={resetFiltri}>Reset filtri</button>}
+        </div>
+      ) : (
+        <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))",gap:12}}>
+          {filtrati
+            .sort((a,b)=>(giorniAllaScadenza(a.dataRevisione)??9999)-(giorniAllaScadenza(b.dataRevisione)??9999))
+            .map(kit=>(
+              <KitCard key={kit.id} kit={kit} onClick={()=>navigate(`/kit/${kit.id}`)}/>
+            ))}
         </div>
       )}
-
-      {/* ── RISULTATI ── */}
-      <div style={{ fontSize: 12, color: "var(--text3)", marginBottom: 10 }}>
-        {filtrati.length} {filtrati.length === 1 ? "kit trovato" : "kit trovati"}
-        {filtrati.length !== kits.length && ` su ${kits.length} totali`}
-      </div>
-
-      <div className="card">
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>N°</th>
-                <th>Nome / Mezzo</th>
-                <th>Targa</th>
-                <th>Bar</th>
-                <th>Dislocazione</th>
-                <th>Ultima revisione</th>
-                <th>Scade tra</th>
-                <th>Stato</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtrati.map(kit => {
-                const stato  = calcolaStato(kit);
-                const giorni = giorniAllaScadenza(kit.dataRevisione);
-                // Marca principale del kit (dalla prima centralina o cuscino)
-                const marca  = (kit.componenti||[])
-                  .map(c => (c.modello||"").split(" ")[0])
-                  .filter(Boolean)[0] || "";
-                return (
-                  <tr key={kit.id} style={{ cursor: "pointer" }} onClick={() => navigate(`/kit/${kit.id}`)}>
-                    <td><strong>{kit.numero}</strong></td>
-                    <td>
-                      <div style={{ fontWeight: 600 }}>{kit.nome}</div>
-                      <div style={{ fontSize: 11, color: "var(--text3)" }}>
-                        {kit.tipoMezzo}
-                        {marca && <span style={{ marginLeft: 6, color: "var(--accent)" }}>{marca}</span>}
-                      </div>
-                    </td>
-                    <td className="mono">{kit.mezzo}</td>
-                    <td>
-                      <span style={{
-                        fontWeight: 700, fontSize: 12,
-                        color: kit.bar === 12 ? "var(--red-text)" : kit.bar === 10 ? "var(--amber-text)" : "var(--text)",
-                      }}>
-                        {kit.bar} bar
-                      </span>
-                    </td>
-                    <td>{kit.dislocazione || "—"}</td>
-                    <td>{formatData(kit.dataRevisione)}</td>
-                    <td style={{ fontSize: 12 }}>
-                      {giorni === null ? "N/D" :
-                        giorni < 0
-                          ? <span style={{ color: "var(--red)", fontWeight: 600 }}>{Math.abs(giorni)}gg fa</span>
-                          : giorni <= 90
-                          ? <span style={{ color: "var(--amber)", fontWeight: 600 }}>{giorni}gg</span>
-                          : <span style={{ color: "var(--green)" }}>{giorni}gg</span>
-                      }
-                    </td>
-                    <td><span className={`pill ${stato}`}>{statoLabel(stato)}</span></td>
-                  </tr>
-                );
-              })}
-              {filtrati.length === 0 && (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: "center", color: "var(--text3)", padding: 36 }}>
-                    <div style={{ fontSize: 20, marginBottom: 8 }}>🔍</div>
-                    Nessun kit trovato con i filtri selezionati.
-                    <br/>
-                    <button
-                      className="card-action"
-                      style={{ marginTop: 8 }}
-                      onClick={resetFiltri}
-                    >
-                      Rimuovi tutti i filtri
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
     </div>
   );
 }
-
-const tagStyle = {
-  background: "var(--blue-bg)", color: "var(--blue-text)",
-  padding: "2px 8px", borderRadius: 10, fontWeight: 600, fontSize: 11,
-};

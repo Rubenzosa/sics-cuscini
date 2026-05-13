@@ -203,14 +203,14 @@ export default function App() {
     { to:"/da-fare",   label:"Da fare",    badge: daFareTotali },
     { to:"/kit",       label:"Kit" },
     { to:"/mezzi",     label:"Mezzi" },
-    { to:"/storico",   label:"Storico" },
+    { to:"/storico",   label:"Archivio" },
   ];
   const navTaglio = [
     { to:"/",          label:"Stato",      end:true },
     { to:"/da-fare",   label:"Da fare",    badge: daFareTotali },
     { to:"/gruppi-taglio", label:"Kit" },
     { to:"/mezzi-taglio",  label:"Mezzi" },
-    { to:"/storico",   label:"Storico" },
+    { to:"/storico",   label:"Archivio" },
   ];
   const navItems = sistema === "taglio" ? navTaglio : navCuscini;
 
@@ -315,7 +315,7 @@ export default function App() {
                 <DaFare kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>
               }/>
               {/* STORICO — hub */}
-              <Route path="/storico" element={
+              <Route path="/archivio" element={
                 <StoricoHub sistema={sistema} setSistema={setSistema}/>
               }/>
               {/* CUSCINI */}
@@ -349,14 +349,10 @@ export default function App() {
 function StoricoHub({ sistema, setSistema }) {
   const navigate = useNavigate();
   const voci = sistema === "cuscini" ? [
-    { label:"Calendario",    desc:"Revisioni pianificate e scadenze",icon:"📅", path:"/calendario" },
-    { label:"Scadenze",      desc:"Tutte le scadenze per urgenza",   icon:"⏰", path:"/scadenze" },
-    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",icon:"🔄", path:"/rotazioni" },
-    { label:"Dashboard",     desc:"Panoramica statistica completa",  icon:"📊", path:"/dashboard" },
+    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"📅", path:"/calendario" },
+    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",  icon:"🔄", path:"/rotazioni" },
   ] : [
-    { label:"Calendario",    desc:"Revisioni pianificate e scadenze",icon:"📅", path:"/calendario" },
-    { label:"Scadenze",      desc:"Tutte le scadenze per urgenza",   icon:"⏰", path:"/scadenze" },
-    { label:"Dashboard",     desc:"Panoramica statistica completa",  icon:"📊", path:"/dashboard" },
+    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"📅", path:"/calendario" },
   ];
   return (
     <div>
