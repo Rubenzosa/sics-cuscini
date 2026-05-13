@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from 
 // Pages
 import StatoGiorno from "./pages/StatoGiorno";
 import DaFare from "./pages/DaFare";
-import Dashboard from "./pages/Dashboard";
 import KitList from "./pages/KitList";
 import KitDetail from "./pages/KitDetail";
 import KitForm from "./pages/KitForm";
@@ -334,7 +333,6 @@ export default function App() {
               {/* SCADENZE E DASHBOARD */}
               <Route path="/scadenze"   element={<Scadenze kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema}/>}/>
               <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
-              <Route path="/dashboard"  element={<Dashboard kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema} setSistema={setSistema}/>}/>
             </Routes>
           )}
         </main>
