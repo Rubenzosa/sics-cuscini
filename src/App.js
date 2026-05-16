@@ -398,17 +398,17 @@ function PwaBanner() {
     if (r.outcome === "accepted") { setS(false); setP(null); }
   }
   return (
-    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"#1a2b3c", color:"#fff", padding:"12px 20px", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, boxShadow:"0 -4px 20px rgba(0,0,0,.3)", borderTop:"2px solid #378add" }}>
+    <div style={{ position:"fixed", bottom:0, left:0, right:0, background:"var(--bg)", color:"var(--text)", padding:"12px 20px", zIndex:9999, display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, boxShadow:"0 -4px 20px rgba(0,0,0,.25)", borderTop:"2px solid var(--accent)" }}>
       <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-        <img src="/logo78.png" alt="" style={{ height:36, width:36, objectFit:"contain", filter:"invert(1) brightness(2)" }}/>
+        <img src="/logo78.png" alt="" style={{ height:36, width:36, objectFit:"contain" }}/>
         <div>
           <div style={{ fontWeight:700, fontSize:13 }}>Installa SICS 78</div>
-          <div style={{ fontSize:11, color:"#8da4bc" }}>Aggiungi alla schermata home</div>
+          <div style={{ fontSize:11, color:"var(--text2)" }}>Aggiungi alla schermata home</div>
         </div>
       </div>
       <div style={{ display:"flex", gap:8 }}>
-        <button onClick={() => setS(false)} style={{ background:"none", border:"1px solid rgba(255,255,255,.25)", color:"#fff", borderRadius:8, padding:"5px 12px", fontSize:11, cursor:"pointer" }}>Non ora</button>
-        <button onClick={install} style={{ background:"#378add", border:"none", color:"#fff", borderRadius:8, padding:"5px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>Installa</button>
+        <button onClick={() => setS(false)} style={{ background:"var(--bg)", boxShadow:"var(--neu-out)", border:"none", color:"var(--text2)", borderRadius:8, padding:"5px 12px", fontSize:11, cursor:"pointer" }}>Non ora</button>
+        <button onClick={install} style={{ background:"var(--accent)", border:"none", color:"#fff", borderRadius:8, padding:"5px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>Installa</button>
       </div>
     </div>
   );
