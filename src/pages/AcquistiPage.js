@@ -59,7 +59,7 @@ export default function AcquistiPage({ kits, gruppiTaglio }) {
                             {isFuoriUso ? "Fuori uso" : `${anni} anni di servizio`}
                           </div>
                         </div>
-                        <span className="pill fuori_uso" style={isFuoriUso ? {} : { color:"var(--taglio)" }}>
+                        <span className={`pill ${isFuoriUso ? "fuori_uso" : "attenzione"}`}>
                           {isFuoriUso ? "Fuori uso" : `${anni} anni`}
                         </span>
                       </div>
@@ -110,7 +110,7 @@ export default function AcquistiPage({ kits, gruppiTaglio }) {
                             {isFuoriUso ? "Fuori uso" : `${anni} anni di servizio`}
                           </div>
                         </div>
-                        <span className="pill fuori_uso" style={isFuoriUso ? {} : { color:"var(--taglio)" }}>
+                        <span className={`pill ${isFuoriUso ? "fuori_uso" : "attenzione"}`}>
                           {isFuoriUso ? "Fuori uso" : `${anni} anni`}
                         </span>
                       </div>
