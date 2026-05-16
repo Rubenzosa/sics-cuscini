@@ -268,8 +268,8 @@ export default function App() {
         <div style={{
           height:3,
           background: sistema==="taglio"
-            ? "linear-gradient(90deg,#f9a825,#e65100)"
-            : "linear-gradient(90deg,#5c6bc0,#3949ab)",
+            ? "linear-gradient(90deg,var(--taglio),var(--amber-text))"
+            : "linear-gradient(90deg,var(--cuscini),var(--blue-text))",
           transition:"background .4s",
         }}/>
 
