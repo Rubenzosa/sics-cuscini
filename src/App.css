@@ -332,6 +332,18 @@ body {
 }
 .loading { text-align: center; padding: 60px; color: var(--text3); font-size: 15px; }
 
+/* ══ SHIMMER SKELETON ══ */
+@keyframes shimmer {
+  from { background-position: -800px 0; }
+  to   { background-position:  800px 0; }
+}
+.shimmer {
+  border-radius: var(--radius-sm);
+  background: linear-gradient(90deg, var(--bg) 0%, var(--bg3) 50%, var(--bg) 100%);
+  background-size: 1600px 100%;
+  animation: shimmer 2s infinite linear;
+}
+
 /* ══ CARDS ══ */
 .card {
   background: var(--bg);

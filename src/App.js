@@ -307,7 +307,22 @@ export default function App() {
         {/* CONTENUTO */}
         <main className="main-content" style={{ paddingTop:16 }}>
           {loading ? (
-            <div className="loading">Caricamento dati...</div>
+            <div style={{ padding:"0 4px" }}>
+              <div className="shimmer" style={{ height:22, width:"38%", marginBottom:20 }}/>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:12 }}>
+                {[...Array(6)].map((_,i) => (
+                  <div key={i} className="card" style={{ padding:"14px 16px" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", marginBottom:12 }}>
+                      <div className="shimmer" style={{ height:34, width:34, borderRadius:6 }}/>
+                      <div className="shimmer" style={{ height:52, width:52, borderRadius:"50%" }}/>
+                    </div>
+                    <div className="shimmer" style={{ height:14, width:"75%", marginBottom:8 }}/>
+                    <div className="shimmer" style={{ height:11, width:"55%", marginBottom:14 }}/>
+                    <div className="shimmer" style={{ height:22, width:70, borderRadius:20 }}/>
+                  </div>
+                ))}
+              </div>
+            </div>
           ) : (
             <Routes>
               {/* STATO DEL GIORNO — home */}
