@@ -243,14 +243,12 @@ export default function App() {
           <div className="sistema-selector">
             <button
               className={`sistema-btn ${sistema==="cuscini"?"active":""}`}
-              onClick={() => setSistema("cuscini")}
-              style={{ color:sistema==="cuscini"?"#1a2b3c":undefined }}>
+              onClick={() => setSistema("cuscini")}>
               Cuscini
             </button>
             <button
               className={`sistema-btn taglio ${sistema==="taglio"?"active":""}`}
-              onClick={() => setSistema("taglio")}
-              style={{ color:sistema==="taglio"?"#7a3500":undefined }}>
+              onClick={() => setSistema("taglio")}>
               Taglio
             </button>
           </div>
@@ -270,16 +268,13 @@ export default function App() {
         <div style={{
           height:3,
           background: sistema==="taglio"
-            ? "linear-gradient(90deg,#e07020,#7a3500)"
-            : "linear-gradient(90deg,#378add,#1a2b3c)",
+            ? "linear-gradient(90deg,#f9a825,#e65100)"
+            : "linear-gradient(90deg,#5c6bc0,#3949ab)",
           transition:"background .4s",
         }}/>
 
         {/* NAVBAR — 3+2 voci */}
-        <nav className="navbar" style={{
-          background: sistema==="taglio"?"#7a3500":"var(--navy2)",
-          transition:"background .4s",
-        }}>
+        <nav className="navbar">
           {navItems.map(item => (
             <NavLink key={item.to} to={item.to} end={item.end}
               className={({isActive}) => isActive ? "nav-item active" : "nav-item"}
