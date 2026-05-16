@@ -47,7 +47,7 @@ export default function AcquistiPage({ kits, gruppiTaglio }) {
                       <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:13, fontWeight:800, textTransform:"uppercase", color:"var(--text)" }}>
-                            Kit {k.numero} — {k.mezzo}
+                            Kit {k.numero} — {k.nome}
                           </div>
                           <div style={{ fontSize:11, color:"var(--text2)", marginTop:2 }}>
                             {k.dislocazione}{k.bar ? ` · ${k.bar} bar` : ""}
@@ -59,7 +59,7 @@ export default function AcquistiPage({ kits, gruppiTaglio }) {
                             {isFuoriUso ? "Fuori uso" : `${anni} anni di servizio`}
                           </div>
                         </div>
-                        <span className={`pill ${isFuoriUso ? "fuori_uso" : "attenzione"}`}>
+                        <span className={`pill ${isFuoriUso ? "critico" : "attenzione"}`}>
                           {isFuoriUso ? "Fuori uso" : `${anni} anni`}
                         </span>
                       </div>
@@ -110,7 +110,7 @@ export default function AcquistiPage({ kits, gruppiTaglio }) {
                             {isFuoriUso ? "Fuori uso" : `${anni} anni di servizio`}
                           </div>
                         </div>
-                        <span className={`pill ${isFuoriUso ? "fuori_uso" : "attenzione"}`}>
+                        <span className={`pill ${isFuoriUso ? "critico" : "attenzione"}`}>
                           {isFuoriUso ? "Fuori uso" : `${anni} anni`}
                         </span>
                       </div>
