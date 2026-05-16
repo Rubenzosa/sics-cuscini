@@ -354,11 +354,11 @@ export default function App() {
 function StoricoHub({ sistema, setSistema }) {
   const navigate = useNavigate();
   const voci = sistema === "cuscini" ? [
-    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"📅", path:"/calendario" },
-    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",  icon:"🔄", path:"/rotazioni" },
+    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"▦", path:"/calendario" },
+    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",  icon:"↻", path:"/rotazioni" },
   ] : [
-    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"📅", path:"/calendario" },
-    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",   icon:"🔄", path:"/rotazioni" },
+    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"▦", path:"/calendario" },
+    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",   icon:"↻", path:"/rotazioni" },
   ];
   return (
     <div>
@@ -378,7 +378,7 @@ function StoricoHub({ sistema, setSistema }) {
             onMouseOver={e => e.currentTarget.style.transform="translateY(-2px)"}
             onMouseOut={e => e.currentTarget.style.transform="none"}
           >
-            <div style={{ fontSize:28, flexShrink:0 }}>{v.icon}</div>
+            <div style={{ fontSize:28, flexShrink:0, color:"var(--accent)", fontWeight:300 }}>{v.icon}</div>
             <div>
               <div style={{ fontWeight:700, fontSize:15, color:"var(--text)" }}>{v.label}</div>
               <div style={{ fontSize:12, color:"var(--text3)", marginTop:3 }}>{v.desc}</div>
