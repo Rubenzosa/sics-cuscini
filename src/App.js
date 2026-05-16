@@ -227,8 +227,8 @@ export default function App() {
           position:"fixed", inset:0, zIndex:0,
           backgroundImage:"url('/logo78.png')",
           backgroundRepeat:"no-repeat", backgroundPosition:"center center",
-          backgroundSize:"340px", opacity:darkMode?0.04:0.06,
-          pointerEvents:"none", filter:darkMode?"invert(1)":"none",
+          backgroundSize:"340px", opacity:darkMode?0.03:0.05,
+          pointerEvents:"none",
         }}/>
 
         {/* TOPBAR */}

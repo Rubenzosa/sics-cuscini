@@ -142,12 +142,22 @@
 }
 
 body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   background-color: var(--bg);
   color: var(--text);
   font-size: 14px;
   line-height: 1.5;
   transition: background-color 0.3s, color 0.3s;
+}
+
+/* Transizione globale smooth per dark/light switch */
+.card, .stat-card, .kanban-card, .mezzo-card,
+.kit-row, .comp-item, .azione-card, .storico-card,
+.modal, .pill, .btn, .search-input, .filter-chip,
+.topbar, .navbar, .sistema-selector, .badge-critico,
+.theme-toggle, .alert-banner,
+.section-red, .section-green, .section-amber, .section-blue {
+  transition: background 0.3s, box-shadow 0.3s, color 0.3s;
 }
 
 .app-shell { position: relative; z-index: 1; min-height: 100vh; display: flex; flex-direction: column; }
