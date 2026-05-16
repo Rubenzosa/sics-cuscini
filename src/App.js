@@ -18,6 +18,7 @@ import GruppiTaglioForm from "./pages/GruppiTaglioForm";
 import KanbanMezziTaglio from "./pages/KanbanMezziTaglio";
 import Calendario from "./pages/Calendario";
 import AdminReset from "./pages/AdminReset";
+import AcquistiPage from "./pages/AcquistiPage";
 
 // Firebase
 import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio, resetAndSeedGruppiTaglio } from "./firebase/service";
@@ -197,6 +198,12 @@ export default function App() {
     ...kits.filter(k => k.stato === "in_revisione" && k.dataRientroStimata && (giorniAllaScadenza(k.dataRientroStimata)??0) < 0),
   ].length;
 
+  const annoCorrente = new Date().getFullYear();
+  const acquistiTotali = [
+    ...kits.filter(k => k.stato === "fuori_uso" || (k.annoAcquisto && annoCorrente - k.annoAcquisto >= 10)),
+    ...gruppiTaglio.filter(g => g.stato === "fuori_uso" || (g.annoAcquisto && annoCorrente - g.annoAcquisto >= 10)),
+  ].length;
+
   // Navbar semplificata per sistema
   const navCuscini = [
     { to:"/",          label:"Stato",      end:true },
@@ -204,6 +211,7 @@ export default function App() {
     { to:"/kit",       label:"Kit" },
     { to:"/mezzi",     label:"Mezzi" },
     { to:"/archivio",  label:"Archivio" },
+    { to:"/acquisti",  label:"Acquisti",   badge: acquistiTotali },
   ];
   const navTaglio = [
     { to:"/",          label:"Stato",      end:true },
@@ -211,6 +219,7 @@ export default function App() {
     { to:"/gruppi-taglio", label:"Kit" },
     { to:"/mezzi-taglio",  label:"Mezzi" },
     { to:"/archivio",  label:"Archivio" },
+    { to:"/acquisti",  label:"Acquisti",   badge: acquistiTotali },
   ];
   const navItems = sistema === "taglio" ? navTaglio : navCuscini;
 
@@ -330,6 +339,7 @@ export default function App() {
               <Route path="/scadenze"   element={<Scadenze kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema}/>}/>
               <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
               <Route path="/admin-reset" element={<AdminReset/>}/>
+              <Route path="/acquisti" element={<AcquistiPage kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
             </Routes>
           )}
         </main>
