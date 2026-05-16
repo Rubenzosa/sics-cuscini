@@ -140,7 +140,7 @@ export default function StatoGiorno({ kits, gruppiTaglio, sistema }) {
     })) : []),
     ...(showTaglio ? gruppiTaglio.filter(g => g.stato !== "fuori_servizio" && g.stato !== "fuori_uso").map(g => ({
       id: g.id, tipo:"taglio",
-      nome: g.nome,
+      nome: `Kit ${g.numero} — ${g.nome}`,
       sub: `${g.mezzo} · ${g.sistema} · ${g.dislocazione}`,
       dataRev: prossimaRevisioneGT(g),
       stato: calcolaStatoGT(g),
@@ -250,7 +250,7 @@ export default function StatoGiorno({ kits, gruppiTaglio, sistema }) {
                     <span style={{ fontSize:18 }}>⛔</span>
                     <div>
                       <div style={{ fontWeight:700, fontSize:13, color:"#888" }}>
-                        {isKit ? `Kit ${item.numero} — ${item.nome}` : item.nome}
+                        {`Kit ${item.numero} — ${item.nome}`}
                       </div>
                       <div style={{ fontSize:11, color:"#555", marginTop:2 }}>{item.mezzo} · {item.dislocazione}</div>
                     </div>
