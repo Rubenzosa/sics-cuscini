@@ -235,7 +235,7 @@ export default function App() {
         <header className="topbar">
           <div className="topbar-brand">
             <img src="/logo78.png" alt="Logo 78"
-              style={{ height:64, width:64, objectFit:"contain", filter:"invert(1) brightness(2)" }}/>
+              style={{ height:56, width:56, objectFit:"contain" }}/>
             <span>SICS — VVF Siena</span>
           </div>
 

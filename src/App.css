@@ -62,9 +62,9 @@
   --accent: #ffb300;
 }
 
-/* Sistema badge */
-.sistema-cuscini { background: #1a2b3c; color: #fff; }
-.sistema-taglio  { background: #7a3500; color: #fff; }
+/* Sistema badge (usato in pills) */
+.sistema-cuscini { background: var(--cuscini); color: #fff; }
+.sistema-taglio  { background: var(--taglio);  color: #fff; }
 
 /* Topbar selettore sistema */
 .sistema-selector {
@@ -149,54 +149,63 @@ body {
 
 /* ══ TOPBAR ══ */
 .topbar {
-  background: var(--navy);
-  padding: 6px 24px;
+  background: var(--bg);
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   position: sticky;
   top: 0;
   z-index: 200;
-  min-height: 72px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  min-height: 68px;
+  box-shadow: 0 4px 12px #c5cace;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+[data-theme="dark"] .topbar {
+  box-shadow: 0 4px 12px #12181f;
 }
 .topbar-brand {
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #fff;
+  color: var(--text);
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.02em;
+  transition: color 0.3s;
 }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
+
 .badge-critico {
-  background: var(--red);
-  color: #fff;
+  background: var(--bg);
+  box-shadow: var(--neu-out);
+  color: var(--red);
   font-size: 11px;
-  font-weight: 700;
-  padding: 4px 12px;
+  font-weight: 800;
+  padding: 5px 12px;
   border-radius: 20px;
   letter-spacing: 0.04em;
   animation: pulse 2s infinite;
+  transition: background 0.3s, box-shadow 0.3s;
 }
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50% { opacity: 0.75; }
+  50%       { opacity: 0.6; }
 }
 
-/* Dark mode toggle */
 .theme-toggle {
-  background: none;
-  border: 1px solid rgba(255,255,255,0.25);
-  border-radius: 20px;
-  color: #fff;
-  padding: 5px 12px;
-  font-size: 14px;
+  background: var(--bg);
+  box-shadow: var(--neu-out);
+  border: none;
+  border-radius: 50%;
+  color: var(--text2);
+  width: 36px; height: 36px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: box-shadow 0.15s, background 0.3s, color 0.3s;
 }
-.theme-toggle:hover { background: rgba(255,255,255,0.1); }
+.theme-toggle:active { box-shadow: var(--neu-in); }
 
 /* ══ NAVBAR ══ */
 .navbar {
