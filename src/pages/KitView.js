@@ -3,8 +3,9 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import KitAccordion from "../components/KitAccordion";
 import { contaStats, scortaMancante } from "../inventario";
-import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT } from "../utils";
+import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT, statoLabel, formatData } from "../utils";
 import { deleteKit, deleteGruppoTaglio, updateKit, updateGruppoTaglio } from "../firebase/service";
+import { buildCsv, buildHtmlReport } from "../export";
 
 export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
   const [search, setSearch] = useState("");
@@ -43,14 +44,42 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
     if (reload) await reload();
   }
 
+  const exportFns = {
+    statoLabelOf: it => statoLabel(calcStato(it)),
+    scadOf: scadDi,
+    scadFmt: formatData,
+  };
+  function esportaCsv() {
+    const csv = buildCsv(items, sistema, exportFns);
+    const BOM = "﻿";
+    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `SICS_${isTaglio ? "taglio" : "cuscini"}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+  function esportaPdf() {
+    const html = buildHtmlReport(items, sistema, exportFns);
+    const w = window.open("", "_blank");
+    if (!w) { alert("Consenti i popup per esportare il PDF."); return; }
+    w.document.write(html);
+    w.document.close();
+  }
+
   return (
     <div>
       {/* Intestazione + nuovo */}
       <div className="page-header">
         <h1 className="page-title">{isTaglio ? "Gruppi da taglio" : "Kit cuscini"}</h1>
-        <Link to={isTaglio ? "/gruppi-taglio/nuovo" : "/kit/nuovo"} className="btn btn-primary">
-          + Nuovo {isTaglio ? "gruppo" : "kit"}
-        </Link>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <button className="btn btn-secondary" onClick={esportaCsv}>Esporta CSV</button>
+          <button className="btn btn-secondary" onClick={esportaPdf}>Esporta PDF</button>
+          <Link to={isTaglio ? "/gruppi-taglio/nuovo" : "/kit/nuovo"} className="btn btn-primary">
+            + Nuovo {isTaglio ? "gruppo" : "kit"}
+          </Link>
+        </div>
       </div>
 
       {/* Statistiche */}
