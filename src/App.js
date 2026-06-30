@@ -19,6 +19,7 @@ import KanbanMezziTaglio from "./pages/KanbanMezziTaglio";
 import Calendario from "./pages/Calendario";
 import AdminReset from "./pages/AdminReset";
 import AcquistiPage from "./pages/AcquistiPage";
+import Rinumerazione from "./pages/Rinumerazione";
 
 // Firebase
 import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio, resetAndSeedGruppiTaglio } from "./firebase/service";
@@ -354,6 +355,7 @@ export default function App() {
               <Route path="/scadenze"   element={<Scadenze kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema}/>}/>
               <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
               <Route path="/admin-reset" element={<AdminReset/>}/>
+              <Route path="/admin/rinumerazione" element={<Rinumerazione reload={loadAll}/>}/>
               <Route path="/acquisti" element={<AcquistiPage kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
             </Routes>
           )}

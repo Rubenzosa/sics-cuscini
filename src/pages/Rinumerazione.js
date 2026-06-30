@@ -1,0 +1,60 @@
+import React, { useState } from "react";
+import { previewRinumerazioneCuscini, applicaRinumerazioneCuscini } from "../firebase/migrazione";
+
+export default function Rinumerazione({ reload }) {
+  const [mappa, setMappa] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [fatto, setFatto] = useState(false);
+
+  async function anteprima() {
+    setBusy(true); setFatto(false);
+    setMappa(await previewRinumerazioneCuscini());
+    setBusy(false);
+  }
+  async function applica() {
+    if (!window.confirm("Applicare la rinumerazione a TUTTI i cuscini? Verifica prima che l'anteprima coincida con l'appendice di numerazione.md.")) return;
+    setBusy(true);
+    const m = await applicaRinumerazioneCuscini();
+    setMappa(m); setFatto(true); setBusy(false);
+    if (reload) await reload();
+  }
+
+  return (
+    <div>
+      <div className="page-header"><h1 className="page-title">Rinumerazione seriali cuscini</h1></div>
+      <div className="card" style={{ marginBottom: 16 }}>
+        <p style={{ fontSize: 13, color: "var(--text2)" }}>
+          Ricalcola le matricole Lucca dei cuscini con contatore globale per categoria.
+          Operazione idempotente: salva <code>vecchio_codice</code>. Solo cuscini, i gruppi taglio non sono toccati.
+        </p>
+        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className="btn btn-secondary" onClick={anteprima} disabled={busy}>Anteprima</button>
+          <button className="btn btn-primary" onClick={applica} disabled={busy || !mappa}>Applica</button>
+        </div>
+      </div>
+
+      {fatto && <div className="section-green" style={{ marginBottom: 12 }}>✓ Rinumerazione applicata: {mappa.length} codici aggiornati.</div>}
+
+      {mappa && (
+        <div className="card">
+          <div className="card-header"><span className="card-title">{fatto ? "Applicati" : "Anteprima"} — {mappa.length} cambiamenti</span></div>
+          {!mappa.length ? (
+            <div style={{ padding: 16, color: "var(--text3)", fontSize: 13 }}>Nessun cambiamento: i codici sono già rinumerati.</div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {mappa.map((m, i) => (
+                <div key={i} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12, padding: "6px 10px", background: "var(--bg3)", borderRadius: 8 }}>
+                  <span style={{ minWidth: 60, color: "var(--text3)" }}>Kit {m.kitNumero}</span>
+                  <span style={{ flex: 1 }}>{m.tipo}</span>
+                  <span style={{ fontFamily: "monospace", color: "var(--text3)" }}>{m.vecchio}</span>
+                  <span>→</span>
+                  <span style={{ fontFamily: "monospace", fontWeight: 800, color: "var(--blue-text)" }}>{m.nuovo}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
