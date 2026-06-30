@@ -59,7 +59,14 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
               {isTaglio ? (
                 c.matricola ? <span style={{ fontFamily: "monospace", fontSize: 10, color: "var(--text2)" }}>{c.matricola}</span> : null
               ) : (
-                c.matricolaLucca ? <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: 10, color: "var(--blue-text)", background: "var(--blue-bg)", padding: "3px 7px", borderRadius: 5 }}>{c.matricolaLucca}</span> : null
+                c.matricolaLucca ? (
+                  <span style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2, flexShrink: 0 }}>
+                    <span style={{ fontFamily: "monospace", fontWeight: 800, fontSize: 10, color: "var(--blue-text)", background: "var(--blue-bg)", padding: "3px 7px", borderRadius: 5 }}>{c.matricolaLucca}</span>
+                    {c.vecchio_codice && c.vecchio_codice !== c.matricolaLucca && (
+                      <span style={{ fontFamily: "monospace", fontSize: 9, color: "var(--text3)", textDecoration: "line-through" }}>{c.vecchio_codice}</span>
+                    )}
+                  </span>
+                ) : null
               )}
             </div>
           ))}

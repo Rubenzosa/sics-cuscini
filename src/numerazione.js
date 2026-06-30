@@ -34,6 +34,21 @@ export function formatMatricolaLucca(cat, bar, index) {
   return `${cat} ${bar} SI ${index}`;
 }
 
+// Ordine canonico dei kit cuscini che riproduce ESATTAMENTE l'appendice di
+// numerazione.md (ordine reale del DB verificato). I kit non in lista (nuovi)
+// vanno in coda, ordinati per numero, così ricevono indici successivi.
+export const ORDINE_CANONICO_CUSCINI = [
+  "kit-4", "kit-13", "kit-21", "kit-15", "kit-17", "kit-19",
+  "kit-12", "kit-11", "kit-20", "kit-18", "kit-16", "kit-14", "kit-22",
+];
+export function ordinaCanonicoCuscini(kits) {
+  function rank(k) {
+    const i = ORDINE_CANONICO_CUSCINI.indexOf(k.id);
+    return i === -1 ? 1e9 + (Number(k.numero) || 0) : i;
+  }
+  return [...(kits || [])].sort((a, b) => rank(a) - rank(b));
+}
+
 // Rinumera una lista ordinata di codici: contatore globale per categoria,
 // bar preservato. I codici non parsabili restano invariati (uppercase).
 export function rinumeraSeriali(codici) {

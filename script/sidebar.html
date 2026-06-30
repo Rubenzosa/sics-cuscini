@@ -491,7 +491,7 @@ function renderKitDetail(){
       items.forEach(function(c){
         h+='<div class="comp"><div class="comp-row">'
           +'<div><div class="comp-t">'+esc(c.tipo)+'</div><div class="comp-m">'+esc(c.modello||"—")+'</div></div>'
-          +'<div style="text-align:right">'+(c.matricolaLucca?'<div style="font-family:monospace;font-weight:800;font-size:11px;color:var(--blue-t);background:var(--blue-bg);padding:2px 7px;border-radius:4px">'+esc(c.matricolaLucca)+'</div>':'')
+          +'<div style="text-align:right">'+(c.matricolaLucca?'<div style="font-family:monospace;font-weight:800;font-size:11px;color:var(--blue-t);background:var(--blue-bg);padding:2px 7px;border-radius:4px">'+esc(c.matricolaLucca)+'</div>'+(c.vecchio_codice&&c.vecchio_codice!==c.matricolaLucca?'<div style="font-family:monospace;font-size:9px;color:var(--text3);text-decoration:line-through">'+esc(c.vecchio_codice)+'</div>':''):'')
           +'<div class="mono">'+esc(c.matricola||"—")+'</div></div></div></div>';
       });
       h+='<hr class="div"/>';
@@ -818,7 +818,7 @@ function renderKitView(){
       h+='<div class="acc-sub">'+(isT?"Componenti":"Seriali componenti")+' ('+((it.componenti||[]).length)+')</div>';
       (it.componenti||[]).forEach(function(c){
         h+='<div class="comp"><div class="comp-row"><div><div class="comp-t">'+esc(c.tipo)+'</div><div class="comp-m">'+esc(c.modello||"—")+'</div></div>'
-          +'<div style="text-align:right">'+(!isT&&c.matricolaLucca?'<div style="font-family:monospace;font-weight:800;font-size:11px;color:var(--blue-t);background:var(--blue-bg);padding:2px 7px;border-radius:4px">'+esc(c.matricolaLucca)+'</div>':'')
+          +'<div style="text-align:right">'+(!isT&&c.matricolaLucca?'<div style="font-family:monospace;font-weight:800;font-size:11px;color:var(--blue-t);background:var(--blue-bg);padding:2px 7px;border-radius:4px">'+esc(c.matricolaLucca)+'</div>'+(c.vecchio_codice&&c.vecchio_codice!==c.matricolaLucca?'<div style="font-family:monospace;font-size:9px;color:var(--text3);text-decoration:line-through">'+esc(c.vecchio_codice)+'</div>':''):'')
           +(c.matricola?'<div class="mono">'+esc(c.matricola)+'</div>':'')+'</div></div></div>';
       });
       h+='<div class="flex gap6 mt8"><button class="btn btn-p btn-sm" onclick="'+(isT?'apriGT':'apriKit')+'(\''+esc(it.id)+'\')">Dettaglio completo</button></div></div>';

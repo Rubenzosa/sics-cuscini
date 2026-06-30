@@ -322,6 +322,7 @@ export default function KitDetail({ kits, reload }) {
                           </div>
                           <div style={{ textAlign:"right", minWidth:150 }}>
                             {c.matricolaLucca && <div style={{ fontFamily:"monospace", fontWeight:800, fontSize:12, color:"var(--blue-text)", background:"var(--blue-bg)", padding:"3px 10px", borderRadius:6, display:"inline-block", marginBottom:4 }}>{c.matricolaLucca}</div>}
+                            {c.vecchio_codice && c.vecchio_codice !== c.matricolaLucca && <div style={{ fontFamily:"monospace", fontSize:10, color:"var(--text3)", textDecoration:"line-through", marginBottom:4 }}>{c.vecchio_codice}</div>}
                             <div className="mono">{c.matricola||"—"}</div>
                             <div style={{ fontSize:10, color:"var(--text3)" }}>{c.bar} bar</div>
                           </div>

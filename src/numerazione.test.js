@@ -1,7 +1,9 @@
 import {
   parseMatricolaLucca, formatMatricolaLucca, categoriaDaTipo, categoriaDaCodice,
   rinumeraSeriali, rinumeraCuscini, suggerisciIndice, suggerisciMatricola,
+  ordinaCanonicoCuscini,
 } from "./numerazione";
+import { kitData } from "./data/kitData";
 
 describe("parse/format/categoria", () => {
   test("parse accetta formato con e senza spazi", () => {
@@ -205,6 +207,18 @@ describe("rinumeraCuscini", () => {
     const { kits: due, mappa } = rinumeraCuscini(uno);
     expect(mappa).toEqual([]);
     expect(due[1].componenti[0].vecchio_codice).toBe("CS 10 SI 4");
+  });
+});
+
+describe("migrazione end-to-end sui dati reali", () => {
+  test("kitData ordinato canonicamente riproduce ESATTAMENTE l'appendice", () => {
+    const ordinati = ordinaCanonicoCuscini(kitData);
+    const { kits } = rinumeraCuscini(ordinati);
+    const coppie = [];
+    ordinati.forEach((k, ki) => (k.componenti || []).forEach((c, ci) => {
+      coppie.push([strip(c.matricolaLucca), strip(kits[ki].componenti[ci].matricolaLucca)]);
+    }));
+    expect(coppie).toEqual(GOLDEN.map(p => [strip(p[0]), strip(p[1])]));
   });
 });
 
