@@ -263,6 +263,7 @@ export default function App() {
               onClick={() => setDarkMode(d => !d)}>
               {darkMode ? "☀" : "☾"}
             </button>
+            <AdminLink/>
           </div>
         </header>
 
@@ -333,6 +334,15 @@ export default function App() {
         <PwaBanner/>
       </div>
     </BrowserRouter>
+  );
+}
+
+// ── LINK AMMINISTRAZIONE ────────────────────────────────────
+function AdminLink() {
+  const navigate = useNavigate();
+  return (
+    <button className="theme-toggle" title="Amministrazione"
+      onClick={() => navigate("/admin/rinumerazione")}>⚙</button>
   );
 }
 

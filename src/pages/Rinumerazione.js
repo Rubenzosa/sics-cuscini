@@ -5,6 +5,13 @@ export default function Rinumerazione({ reload }) {
   const [mappa, setMappa] = useState(null);
   const [busy, setBusy] = useState(false);
   const [fatto, setFatto] = useState(false);
+  const [auth, setAuth] = useState(false);
+  const [pw, setPw] = useState("");
+
+  function provaPw() {
+    if (pw === "0577") setAuth(true);
+    else alert("Password errata");
+  }
 
   async function anteprima() {
     setBusy(true); setFatto(false);
@@ -17,6 +24,24 @@ export default function Rinumerazione({ reload }) {
     const m = await applicaRinumerazioneCuscini();
     setMappa(m); setFatto(true); setBusy(false);
     if (reload) await reload();
+  }
+
+  if (!auth) {
+    return (
+      <div>
+        <div className="page-header"><h1 className="page-title">Area amministrazione</h1></div>
+        <div className="card" style={{ maxWidth: 360 }}>
+          <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 10 }}>
+            Inserisci la password per accedere alla rinumerazione.
+          </p>
+          <input type="password" value={pw}
+            onChange={e => setPw(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter") provaPw(); }}
+            placeholder="Password" style={{ marginBottom: 10 }} />
+          <button className="btn btn-primary" onClick={provaPw}>Entra</button>
+        </div>
+      </div>
+    );
   }
 
   return (
