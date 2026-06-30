@@ -1,5 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useMemo } from "react";
+import { Link } from "react-router-dom";
 import KitAccordion from "../components/KitAccordion";
 import { contaStats, scortaMancante } from "../inventario";
 import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT } from "../utils";
@@ -29,6 +30,14 @@ export default function KitView({ kits, gruppiTaglio, sistema }) {
 
   return (
     <div>
+      {/* Intestazione + nuovo */}
+      <div className="page-header">
+        <h1 className="page-title">{isTaglio ? "Gruppi da taglio" : "Kit cuscini"}</h1>
+        <Link to={isTaglio ? "/gruppi-taglio/nuovo" : "/kit/nuovo"} className="btn btn-primary">
+          + Nuovo {isTaglio ? "gruppo" : "kit"}
+        </Link>
+      </div>
+
       {/* Statistiche */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
         <Stat n={stats.operativi} l="Operativi" />
