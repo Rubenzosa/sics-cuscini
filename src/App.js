@@ -304,7 +304,7 @@ export default function App() {
           ) : (
             <Routes>
               {/* HOME — vista KIT del sistema attivo */}
-              <Route path="/" element={<KitView kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>}/>
+              <Route path="/" element={<KitView kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema} reload={loadAll}/>}/>
 
               {/* CALENDARIO */}
               <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>

@@ -4,8 +4,9 @@ import { Link } from "react-router-dom";
 import KitAccordion from "../components/KitAccordion";
 import { contaStats, scortaMancante } from "../inventario";
 import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT } from "../utils";
+import { deleteKit, deleteGruppoTaglio, updateKit, updateGruppoTaglio } from "../firebase/service";
 
-export default function KitView({ kits, gruppiTaglio, sistema }) {
+export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState(null);
 
@@ -28,6 +29,19 @@ export default function KitView({ kits, gruppiTaglio, sistema }) {
 
   const fuoriUso = items.filter(it => it.stato === "fuori_uso");
   const scortaLabel = isTaglio ? "gruppo da taglio" : "cuscino";
+
+  async function ripristina(it) {
+    if (!window.confirm(`Rimettere ATTIVO il Kit ${it.numero} — ${it.nome}?`)) return;
+    if (isTaglio) await updateGruppoTaglio(it.id, { stato: "attivo" });
+    else await updateKit(it.id, { stato: "attivo" });
+    if (reload) await reload();
+  }
+  async function elimina(it) {
+    if (!window.confirm(`Eliminare DEFINITIVAMENTE il Kit ${it.numero} — ${it.nome}?\nL'operazione non è reversibile.`)) return;
+    if (isTaglio) await deleteGruppoTaglio(it.id);
+    else await deleteKit(it.id);
+    if (reload) await reload();
+  }
 
   return (
     <div>
@@ -87,15 +101,17 @@ export default function KitView({ kits, gruppiTaglio, sistema }) {
           </summary>
           <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
             {fuoriUso.map(it => (
-              <Link key={it.id} to={isTaglio ? `/gruppi-taglio/${it.id}` : `/kit/${it.id}`}
-                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", textDecoration: "none", color: "var(--text2)" }}>
+              <div key={it.id}
+                style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text2)", flexWrap: "wrap" }}>
                 <span style={{ fontSize: 18, fontWeight: 900, color: "var(--text3)", minWidth: 34 }}>{it.numero}</span>
-                <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                <span style={{ flex: 1, minWidth: 120, overflow: "hidden" }}>
                   <span style={{ display: "block", fontWeight: 700, fontSize: 13, overflowWrap: "anywhere" }}>{it.nome}</span>
                   <span style={{ display: "block", fontSize: 11, color: "var(--text3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.mezzo}</span>
                 </span>
-                <span className="pill fuori_uso">Fuori uso</span>
-              </Link>
+                <Link to={isTaglio ? `/gruppi-taglio/${it.id}` : `/kit/${it.id}`} className="btn btn-secondary" style={{ fontSize: 11, padding: "5px 10px" }}>Apri</Link>
+                <button className="btn btn-secondary" style={{ fontSize: 11, padding: "5px 10px" }} onClick={() => ripristina(it)}>Rimetti attivo</button>
+                <button className="btn btn-danger" style={{ fontSize: 11, padding: "5px 10px" }} onClick={() => elimina(it)}>Elimina</button>
+              </div>
             ))}
           </div>
           <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8, paddingLeft: 4 }}>
