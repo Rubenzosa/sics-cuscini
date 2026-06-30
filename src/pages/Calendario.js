@@ -2,19 +2,19 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  getAllRevisioniPianificate,
-  pianificaRevisione,
+  getAllRevisioniPianificate, pianificaRevisione,
   aggiornaRevisionePianificata,
-  deleteRevisionePianificata,
+  getAllPromemoria, salvaPromemoria, deletePromemoria, getAllManutenzioniGT,
 } from "../firebase/service";
 import { calcolaStato, calcolaStatoGT, prossimaRevisioneGT, giorniAllaScadenza } from "../utils";
+import { normalizzaEventi } from "../calendarioEventi";
 
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
               "Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
 const GIORNI = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
 const OFFICINE = ["VVF Siena","VVF Firenze","VVF Arezzo","Centro revisione esterno","Altro"];
+const COLORE_SISTEMA = { cuscini: "#5c6bc0", taglio: "#f9a825" };
 
-// ── UTIL DATE ───────────────────────────────────────────────
 function isoToDate(s) { return s ? new Date(s) : null; }
 function dateToIso(d) { return d ? d.toISOString().split("T")[0] : ""; }
 function sameDay(a, b) {
@@ -168,18 +168,25 @@ export default function Calendario({ kits, gruppiTaglio }) {
   const oggi      = new Date();
   const [anno, setAnno]     = useState(oggi.getFullYear());
   const [mese, setMese]     = useState(oggi.getMonth());
-  const [eventi, setEventi] = useState([]);
+  const [eventi, setEventi] = useState([]);          // revisioni pianificate
+  const [promemoria, setPromemoria]     = useState([]);
+  const [manutenzioni, setManutenzioni] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [giornoPop, setGiornoPop] = useState(null); // data selezionata per popup
-  const [modal, setModal]   = useState(null);       // null | "nuovo" | evento (editing)
+  const [giornoPop, setGiornoPop] = useState(null);
+  const [modal, setModal]   = useState(null);
   const [dataClick, setDataClick] = useState(null);
+  const [filtroSistema, setFiltroSistema] = useState("tutti"); // tutti | cuscini | taglio
 
   useEffect(() => { carica(); }, []);
 
   async function carica() {
     setLoading(true);
-    const data = await getAllRevisioniPianificate();
-    setEventi(data);
+    const [piani, prom, manut] = await Promise.all([
+      getAllRevisioniPianificate(), getAllPromemoria(), getAllManutenzioniGT(),
+    ]);
+    setEventi(piani);
+    setPromemoria(prom);
+    setManutenzioni(manut);
     setLoading(false);
   }
 
@@ -193,63 +200,38 @@ export default function Calendario({ kits, gruppiTaglio }) {
     setModal(null);
   }
 
-  async function handleDelete(id) {
-    if (!window.confirm("Eliminare questa revisione pianificata?")) return;
-    await deleteRevisionePianificata(id);
+  async function handleDeletePromemoria(id) {
+    if (!window.confirm("Eliminare questo promemoria?")) return;
+    await deletePromemoria(id);
     await carica();
-    setGiornoPop(null);
   }
 
-  async function handleCompleta(ev) {
-    await aggiornaRevisionePianificata(ev.id, { stato:"completata" });
+  async function handleNuovoPromemoria(d) {
+    const titolo = window.prompt("Testo del promemoria:");
+    if (!titolo) return;
+    const sistema = window.confirm("OK = Cuscini, Annulla = Taglio") ? "cuscini" : "taglio";
+    await salvaPromemoria({ data: dateToIso(d), sistema, titolo, note: "" });
     await carica();
-    setGiornoPop(null);
   }
 
-  // Costruisce griglia del mese
+  // Eventi unificati del calendario, filtrati per sistema
+  const eventiUnificati = normalizzaEventi(
+    { kits, gruppi: gruppiTaglio, pianificate: eventi, manutenzioni, promemoria },
+    { statoKit: calcolaStato, statoGT: calcolaStatoGT, scadGT: prossimaRevisioneGT }
+  ).filter(ev => filtroSistema === "tutti" || ev.sistema === filtroSistema);
+
+  function eventiDelGiorno(d) {
+    if (!d) return [];
+    const k = dateToIso(d);
+    return eventiUnificati.filter(ev => ev.data === k);
+  }
+
+  // Griglia del mese
   const primoGiorno = new Date(anno, mese, 1);
   const ultimoGiorno = new Date(anno, mese+1, 0);
-  // Giorno settimana del primo (0=dom → trasforma in 0=lun)
   let startDay = primoGiorno.getDay() - 1;
   if (startDay < 0) startDay = 6;
   const totaleCelle = Math.ceil((startDay + ultimoGiorno.getDate()) / 7) * 7;
-
-  // Raggruppa eventi per data
-  const eventiPerGiorno = {};
-  eventi.forEach(ev => {
-    if (!ev.dataPrevista) return;
-    const k = ev.dataPrevista;
-    if (!eventiPerGiorno[k]) eventiPerGiorno[k] = [];
-    eventiPerGiorno[k].push(ev);
-  });
-
-  // Scadenze automatiche nel mese corrente (da kits e gruppi)
-  const scadenzeDelMese = [];
-  [...kits, ...gruppiTaglio].forEach(item => {
-    const isKit = "dataRevisione" in item;
-    const data  = isKit ? item.dataRevisione : prossimaRevisioneGT(item);
-    if (!data || data === "NO REVISIONE") return;
-    const d = new Date(data);
-    if (d.getFullYear() === anno && d.getMonth() === mese) {
-      scadenzeDelMese.push({
-        id:     item.id,
-        tipo:   "scadenza",
-        sistema: isKit ? "cuscini" : "taglio",
-        nome:   isKit ? `Kit ${item.numero} — ${item.nome}` : item.nome,
-        data,
-        stato:  isKit ? calcolaStato(item) : calcolaStatoGT(item),
-        onClick: () => navigate(isKit ? `/kit/${item.id}` : `/gruppi-taglio/${item.id}`),
-      });
-    }
-  });
-
-  function getEventiGiorno(d) {
-    const iso = dateToIso(d);
-    return (eventiPerGiorno[iso] || []).map(ev => ({ ...ev, tipo:"pianificata" }));
-  }
-  function getScadenzeGiorno(d) {
-    return scadenzeDelMese.filter(s => sameDay(new Date(s.data), d));
-  }
 
   function navigaMese(delta) {
     let m = mese + delta;
@@ -260,12 +242,7 @@ export default function Calendario({ kits, gruppiTaglio }) {
     setGiornoPop(null);
   }
 
-  // Popup eventi del giorno selezionato
-  const evGiorno    = giornoPop ? getEventiGiorno(giornoPop) : [];
-  const scGiorno    = giornoPop ? getScadenzeGiorno(giornoPop) : [];
-  const tuttiGiorno = [...evGiorno, ...scGiorno];
-
-  // Prossimi eventi (lista sotto calendario)
+  // Prossimi eventi pianificati (lista sotto)
   const prossimi = eventi
     .filter(e => e.stato === "pianificata" && e.dataPrevista >= dateToIso(oggi))
     .slice(0, 8);
@@ -274,9 +251,9 @@ export default function Calendario({ kits, gruppiTaglio }) {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Calendario revisioni</h1>
+          <h1 className="page-title">Calendario</h1>
           <div style={{ fontSize:12, color:"var(--text3)", marginTop:4 }}>
-            Revisioni pianificate e scadenze
+            Scadenze, revisioni pianificate, manutenzioni e promemoria
           </div>
         </div>
         <button className="btn btn-primary"
@@ -285,34 +262,30 @@ export default function Calendario({ kits, gruppiTaglio }) {
         </button>
       </div>
 
-      {/* Legenda */}
-      <div style={{ display:"flex", gap:16, marginBottom:14, flexWrap:"wrap", fontSize:11 }}>
-        {[
-          { color:"#378add", label:"Revisione pianificata" },
-          { color:"#e24b4a", label:"Scadenza — scaduta/critica" },
-          { color:"#ba7517", label:"Scadenza — quest'anno" },
-          { color:"#639922", label:"Scadenza — in regola" },
-          { color:"#888",    label:"Completata" },
-        ].map(l => (
-          <div key={l.label} style={{ display:"flex", alignItems:"center", gap:5 }}>
-            <div style={{ width:10, height:10, borderRadius:"50%", background:l.color, flexShrink:0 }}/>
-            <span style={{ color:"var(--text3)" }}>{l.label}</span>
-          </div>
+      {/* Filtro sistema + legenda */}
+      <div style={{ display:"flex", gap:8, marginBottom:12, flexWrap:"wrap", alignItems:"center" }}>
+        {[["tutti","Tutti"],["cuscini","Cuscini"],["taglio","Taglio"]].map(([k,l]) => (
+          <button key={k} className={`filter-chip ${filtroSistema===k?"active":""}`} onClick={() => setFiltroSistema(k)}>{l}</button>
         ))}
+        <div style={{ display:"flex", gap:14, marginLeft:"auto", fontSize:11 }}>
+          <Legenda color="#5c6bc0" label="Cuscini" />
+          <Legenda color="#f9a825" label="Taglio" />
+          <Legenda color="var(--red)" label="Scaduto/critico" ring />
+        </div>
       </div>
 
       {/* Navigazione mese */}
       <div style={{ background:"var(--bg2)", border:"1px solid var(--border)", borderRadius:"var(--radius)", overflow:"hidden", marginBottom:16, boxShadow:"var(--shadow)" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", borderBottom:"1px solid var(--border)", background:"var(--navy)" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"12px 20px", borderBottom:"1px solid var(--border)" }}>
           <button onClick={() => navigaMese(-1)}
-            style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:16 }}>
+            style={{ background:"var(--bg)", boxShadow:"var(--neu-out)", border:"none", color:"var(--text2)", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:16 }}>
             ‹
           </button>
-          <span style={{ color:"#fff", fontWeight:800, fontSize:16 }}>
+          <span style={{ fontWeight:800, fontSize:16 }}>
             {MESI[mese]} {anno}
           </span>
           <button onClick={() => navigaMese(1)}
-            style={{ background:"rgba(255,255,255,.15)", border:"none", color:"#fff", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:16 }}>
+            style={{ background:"var(--bg)", boxShadow:"var(--neu-out)", border:"none", color:"var(--text2)", borderRadius:8, padding:"6px 14px", cursor:"pointer", fontSize:16 }}>
             ›
           </button>
         </div>
@@ -334,8 +307,7 @@ export default function Calendario({ kits, gruppiTaglio }) {
             const d      = valid ? new Date(anno, mese, dayNum) : null;
             const isOggi = d && sameDay(d, oggi);
             const isSel  = d && giornoPop && sameDay(d, giornoPop);
-            const evs    = d ? getEventiGiorno(d) : [];
-            const scs    = d ? getScadenzeGiorno(d) : [];
+            const evs    = d ? eventiDelGiorno(d) : [];
 
             return (
               <div key={i}
@@ -343,7 +315,6 @@ export default function Calendario({ kits, gruppiTaglio }) {
                 style={{
                   minHeight:72, padding:"6px 8px",
                   border:"1px solid var(--border)",
-                  borderRadius:0,
                   background: isSel ? "var(--blue-bg)" : isOggi ? "var(--bg3)" : "var(--bg2)",
                   cursor: d ? "pointer" : "default",
                   opacity: valid ? 1 : 0,
@@ -361,29 +332,19 @@ export default function Calendario({ kits, gruppiTaglio }) {
                       {isOggi && <span style={{ marginLeft:4, fontSize:9, background:"var(--accent)", color:"#fff", padding:"1px 5px", borderRadius:8 }}>oggi</span>}
                     </div>
 
-                    {/* Dot eventi */}
-                    <div style={{ display:"flex", flexWrap:"wrap", gap:2 }}>
-                      {evs.slice(0,3).map((ev,j) => (
-                        <div key={j} style={{ width:8, height:8, borderRadius:"50%",
-                          background: ev.stato==="completata" ? "#888" : "#378add" }}/>
+                    {/* Dot eventi per sistema */}
+                    <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+                      {evs.slice(0,4).map((ev,j) => (
+                        <span key={j} title={ev.nome} style={{
+                          width:9, height:9, borderRadius:"50%",
+                          background: COLORE_SISTEMA[ev.sistema],
+                          boxShadow: (ev.stato==="scaduto"||ev.stato==="critico") ? "0 0 0 2px var(--red)" : "none",
+                        }}/>
                       ))}
-                      {scs.slice(0,3).map((sc,j) => (
-                        <div key={j} style={{ width:8, height:8, borderRadius:"50%",
-                          background: sc.stato==="scaduto"||sc.stato==="critico" ? "#e24b4a"
-                            : sc.stato==="attenzione" ? "#ba7517" : "#639922" }}/>
-                      ))}
-                      {(evs.length + scs.length) > 3 && (
-                        <div style={{ fontSize:9, color:"var(--text3)" }}>+{evs.length+scs.length-3}</div>
+                      {evs.length > 4 && (
+                        <span style={{ fontSize:9, color:"var(--text3)" }}>+{evs.length-4}</span>
                       )}
                     </div>
-
-                    {/* Label evento (solo se pochi) */}
-                    {evs.length === 1 && scs.length === 0 && (
-                      <div style={{ fontSize:9, color:"#378add", fontWeight:700, marginTop:2,
-                        overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                        {evs[0].kitNomi?.[0] || "Revisione"}
-                      </div>
-                    )}
                   </>
                 )}
               </div>
@@ -393,75 +354,36 @@ export default function Calendario({ kits, gruppiTaglio }) {
       </div>
 
       {/* Popup giorno selezionato */}
-      {giornoPop && tuttiGiorno.length > 0 && (
+      {giornoPop && (
         <div className="card" style={{ marginBottom:16, borderTop:"3px solid var(--accent)" }}>
           <div className="card-header">
             <span className="card-title">
               {giornoPop.toLocaleDateString("it-IT",{weekday:"long",day:"numeric",month:"long"})}
             </span>
-            <button className="card-action" onClick={() => { setDataClick(dateToIso(giornoPop)); setModal("nuovo"); }}>
-              + Aggiungi
-            </button>
+            <button className="card-action" onClick={() => handleNuovoPromemoria(giornoPop)}>+ Promemoria</button>
           </div>
-
-          <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-            {/* Revisioni pianificate */}
-            {evGiorno.map(ev => (
-              <div key={ev.id} style={{
-                background:"var(--blue-bg)", border:"1px solid #b5d4f4",
-                borderRadius:"var(--radius-sm)", padding:"12px 14px",
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {eventiDelGiorno(giornoPop).length === 0 && (
+              <div style={{ color:"var(--text3)", fontSize:13 }}>Nessun evento.</div>
+            )}
+            {eventiDelGiorno(giornoPop).map((ev,i) => (
+              <div key={i} style={{
+                display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
+                background:"var(--bg3)", border:"1px solid var(--border)",
+                borderLeft:`4px solid ${COLORE_SISTEMA[ev.sistema]}`, borderRadius:"var(--radius-sm)",
               }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:8 }}>
-                  <div>
-                    <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-                      <span style={{ fontSize:10, fontWeight:800, padding:"2px 8px", borderRadius:10,
-                        background: ev.stato==="completata" ? "#888" : "#378add", color:"#fff" }}>
-                        {ev.stato==="completata" ? "COMPLETATA" : "PIANIFICATA"}
-                      </span>
-                      <span style={{ fontSize:10, fontWeight:700, padding:"2px 7px", borderRadius:10,
-                        background: ev.sistema==="taglio" ? "#7a3500" : "#1a2b3c", color:"#fff" }}>
-                        {ev.sistema==="taglio" ? "TAGLIO" : "CUSCINI"}
-                      </span>
-                    </div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"var(--text)" }}>
-                      {(ev.kitNomi||[]).join(", ")}
-                    </div>
-                    <div style={{ fontSize:12, color:"var(--text3)", marginTop:2 }}>
-                      {ev.officina}{ev.note ? ` — ${ev.note}` : ""}
-                    </div>
-                  </div>
-                  <div style={{ display:"flex", gap:6, flexShrink:0 }}>
-                    {ev.stato !== "completata" && (
-                      <button className="btn btn-success" style={{ fontSize:11, padding:"4px 10px" }}
-                        onClick={() => handleCompleta(ev)}>✓</button>
-                    )}
-                    <button className="btn btn-secondary" style={{ fontSize:11, padding:"4px 10px" }}
-                      onClick={() => setModal(ev)}>✏</button>
-                    <button className="btn btn-danger" style={{ fontSize:11, padding:"4px 10px" }}
-                      onClick={() => handleDelete(ev.id)}>✕</button>
-                  </div>
-                </div>
-              </div>
-            ))}
-
-            {/* Scadenze automatiche */}
-            {scGiorno.map((sc, i) => (
-              <div key={i} onClick={sc.onClick}
-                style={{
-                  background:"var(--bg3)", border:`1px solid var(--border)`,
-                  borderLeft:`4px solid ${sc.stato==="scaduto"||sc.stato==="critico"?"#e24b4a":sc.stato==="attenzione"?"#ba7517":"#639922"}`,
-                  borderRadius:"var(--radius-sm)", padding:"10px 14px",
-                  cursor:"pointer",
-                }}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <div>
-                    <div style={{ fontSize:10, fontWeight:800, marginBottom:2, color:"var(--text3)", textTransform:"uppercase" }}>
-                      Scadenza revisione
-                    </div>
-                    <div style={{ fontSize:13, fontWeight:700, color:"var(--text)" }}>{sc.nome}</div>
-                  </div>
-                  <span className={`pill ${sc.stato}`} style={{ fontSize:10 }}>{sc.stato}</span>
-                </div>
+                <span style={{ fontSize:9, fontWeight:800, textTransform:"uppercase", letterSpacing:".04em", padding:"2px 8px", borderRadius:10, color:"#fff", background:COLORE_SISTEMA[ev.sistema] }}>
+                  {ev.sistema === "taglio" ? "Taglio" : "Cuscini"}
+                </span>
+                <span style={{ flex:1, minWidth:0, cursor: ev.tipo==="scadenza" ? "pointer" : "default" }}
+                  onClick={() => { if (ev.tipo==="scadenza") navigate(ev.sistema==="taglio" ? `/gruppi-taglio/${ev.id}` : `/kit/${ev.id}`); }}>
+                  <span style={{ display:"block", fontSize:13, fontWeight:700 }}>{ev.nome}</span>
+                  <span style={{ display:"block", fontSize:10, color:"var(--text3)", textTransform:"uppercase" }}>{ev.tipo}</span>
+                </span>
+                {ev.tipo === "promemoria" && (
+                  <button className="btn btn-danger" style={{ fontSize:11, padding:"4px 10px" }}
+                    onClick={() => handleDeletePromemoria(ev.id)}>✕</button>
+                )}
               </div>
             ))}
           </div>
@@ -493,7 +415,6 @@ export default function Calendario({ kits, gruppiTaglio }) {
                   style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 14px",
                     background:"var(--bg3)", border:"1px solid var(--border)",
                     borderRadius:"var(--radius-sm)", cursor:"pointer" }}>
-                  {/* Data */}
                   <div style={{ textAlign:"center", minWidth:44, flexShrink:0 }}>
                     <div style={{ fontSize:20, fontWeight:800, color:"var(--accent)", lineHeight:1 }}>
                       {new Date(ev.dataPrevista).getDate()}
@@ -502,9 +423,7 @@ export default function Calendario({ kits, gruppiTaglio }) {
                       {MESI[new Date(ev.dataPrevista).getMonth()].slice(0,3).toUpperCase()}
                     </div>
                   </div>
-                  {/* Divisore */}
                   <div style={{ width:1, height:36, background:"var(--border)", flexShrink:0 }}/>
-                  {/* Info */}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontWeight:700, fontSize:13, color:"var(--text)",
                       overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
@@ -514,10 +433,9 @@ export default function Calendario({ kits, gruppiTaglio }) {
                       {ev.officina}{ev.note ? ` — ${ev.note}` : ""}
                     </div>
                   </div>
-                  {/* Badge */}
                   <div style={{ textAlign:"right", flexShrink:0 }}>
                     <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10,
-                      background: ev.sistema==="taglio"?"#7a3500":"#1a2b3c", color:"#fff" }}>
+                      background: COLORE_SISTEMA[ev.sistema==="taglio"?"taglio":"cuscini"], color:"#fff" }}>
                       {ev.sistema==="taglio"?"TAGLIO":"CUSCINI"}
                     </span>
                     <div style={{ fontSize:11, color:"var(--text3)", marginTop:3 }}>
@@ -543,5 +461,14 @@ export default function Calendario({ kits, gruppiTaglio }) {
         />
       )}
     </div>
+  );
+}
+
+function Legenda({ color, label, ring }) {
+  return (
+    <span style={{ display:"flex", alignItems:"center", gap:5, color:"var(--text3)" }}>
+      <span style={{ width:10, height:10, borderRadius:"50%", background: ring ? "transparent" : color, border: ring ? `2px solid ${color}` : "none" }}/>
+      {label}
+    </span>
   );
 }
