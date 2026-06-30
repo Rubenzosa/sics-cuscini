@@ -1,24 +1,16 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState, useRef, useCallback } from "react";
-import { BrowserRouter, Routes, Route, NavLink, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, NavLink, Navigate, useNavigate, useLocation } from "react-router-dom";
 
 // Pages
-import StatoGiorno from "./pages/StatoGiorno";
-import DaFare from "./pages/DaFare";
-import KitList from "./pages/KitList";
+import KitView from "./pages/KitView";
 import KitDetail from "./pages/KitDetail";
 import KitForm from "./pages/KitForm";
-import Scadenze from "./pages/Scadenze";
-import KanbanMezzi from "./pages/KanbanMezzi";
-import Rotazioni from "./pages/Rotazioni";
-import GruppiTaglioList from "./pages/GruppiTaglioList";
 import GruppiTaglioDetail from "./pages/GruppiTaglioDetail";
 import GruppiTaglioForm from "./pages/GruppiTaglioForm";
-import KanbanMezziTaglio from "./pages/KanbanMezziTaglio";
 import Calendario from "./pages/Calendario";
 import AdminReset from "./pages/AdminReset";
-import AcquistiPage from "./pages/AcquistiPage";
 import Rinumerazione from "./pages/Rinumerazione";
 
 // Firebase
@@ -283,26 +275,10 @@ export default function App() {
           transition:"background .4s",
         }}/>
 
-        {/* NAVBAR — 3+2 voci */}
-        <nav className="navbar">
-          {navItems.map(item => (
-            <NavLink key={item.to} to={item.to} end={item.end}
-              className={({isActive}) => isActive ? "nav-item active" : "nav-item"}
-              style={{ position:"relative" }}>
-              {item.label}
-              {item.badge > 0 && (
-                <span style={{
-                  position:"absolute", top:6, right:4,
-                  background:"#e24b4a", color:"#fff",
-                  fontSize:9, fontWeight:800,
-                  width:16, height:16, borderRadius:"50%",
-                  display:"flex", alignItems:"center", justifyContent:"center",
-                }}>
-                  {item.badge}
-                </span>
-              )}
-            </NavLink>
-          ))}
+        {/* TOGGLE VISTA */}
+        <nav className="navbar" style={{ padding: "8px 24px", gap: 8 }}>
+          <NavLink to="/" end className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>KIT</NavLink>
+          <NavLink to="/calendario" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>Calendario</NavLink>
         </nav>
 
         {/* CONTENUTO */}
@@ -326,37 +302,30 @@ export default function App() {
             </div>
           ) : (
             <Routes>
-              {/* STATO DEL GIORNO — home */}
-              <Route path="/" element={
-                <StatoGiorno kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>
-              }/>
-              {/* DA FARE */}
-              <Route path="/da-fare" element={
-                <DaFare kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>
-              }/>
-              {/* STORICO — hub */}
-              <Route path="/archivio" element={
-                <StoricoHub sistema={sistema} setSistema={setSistema}/>
-              }/>
-              {/* CUSCINI */}
-              <Route path="/kit"              element={<KitList kits={kits} reload={loadAll}/>}/>
+              {/* HOME — vista KIT del sistema attivo */}
+              <Route path="/" element={<KitView kits={kits} gruppiTaglio={gruppiTaglio} sistema={sistema}/>}/>
+
+              {/* CALENDARIO */}
+              <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
+
+              {/* CUSCINI — dettaglio/form raggiungibili da KitView */}
               <Route path="/kit/nuovo"        element={<KitForm kits={kits} reload={loadAll}/>}/>
               <Route path="/kit/:id"          element={<KitDetail kits={kits} reload={loadAll}/>}/>
               <Route path="/kit/:id/modifica" element={<KitForm kits={kits} reload={loadAll}/>}/>
-              <Route path="/mezzi"            element={<KanbanMezzi kits={kits}/>}/>
-              <Route path="/rotazioni"        element={<Rotazioni kits={kits} reload={loadAll}/>}/>
-              {/* GRUPPI TAGLIO */}
-              <Route path="/gruppi-taglio"              element={<GruppiTaglioList gruppi={gruppiTaglio} reload={loadAll}/>}/>
+
+              {/* GRUPPI TAGLIO — dettaglio/form */}
               <Route path="/gruppi-taglio/nuovo"        element={<GruppiTaglioForm gruppi={gruppiTaglio} reload={loadAll}/>}/>
               <Route path="/gruppi-taglio/:id"          element={<GruppiTaglioDetail gruppi={gruppiTaglio} reload={loadAll}/>}/>
               <Route path="/gruppi-taglio/:id/modifica" element={<GruppiTaglioForm gruppi={gruppiTaglio} reload={loadAll}/>}/>
-              <Route path="/mezzi-taglio"               element={<KanbanMezziTaglio gruppi={gruppiTaglio}/>}/>
-              {/* SCADENZE E DASHBOARD */}
-              <Route path="/scadenze"   element={<Scadenze kits={kits} gruppiTaglio={gruppiTaglio} sistemaAttivo={sistema}/>}/>
-              <Route path="/calendario" element={<Calendario kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
+
+              {/* ADMIN */}
               <Route path="/admin-reset" element={<AdminReset/>}/>
               <Route path="/admin/rinumerazione" element={<Rinumerazione reload={loadAll}/>}/>
-              <Route path="/acquisti" element={<AcquistiPage kits={kits} gruppiTaglio={gruppiTaglio}/>}/>
+
+              {/* Redirect delle vecchie tab rimosse */}
+              <Route path="/kit" element={<Navigate to="/" replace/>}/>
+              <Route path="/gruppi-taglio" element={<Navigate to="/" replace/>}/>
+              <Route path="*" element={<Navigate to="/" replace/>}/>
             </Routes>
           )}
         </main>
@@ -364,47 +333,6 @@ export default function App() {
         <PwaBanner/>
       </div>
     </BrowserRouter>
-  );
-}
-
-// ── STORICO HUB ─────────────────────────────────────────────
-function StoricoHub({ sistema, setSistema }) {
-  const navigate = useNavigate();
-  const voci = sistema === "cuscini" ? [
-    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"▦", path:"/calendario" },
-    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",  icon:"↻", path:"/rotazioni" },
-  ] : [
-    { label:"Calendario",    desc:"Revisioni pianificate e promemoria", icon:"▦", path:"/calendario" },
-    { label:"Rotazioni",     desc:"Piano revisioni e copertura sedi",   icon:"↻", path:"/rotazioni" },
-  ];
-  return (
-    <div>
-      <div className="page-header">
-        <h1 className="page-title">Storico & Archivio</h1>
-      </div>
-      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-        {voci.map(v => (
-          <div key={v.path} onClick={() => navigate(v.path)}
-            style={{
-              background:"var(--bg2)", border:"1px solid var(--border)",
-              borderRadius:"var(--radius)", padding:"16px 20px",
-              display:"flex", alignItems:"center", gap:16,
-              cursor:"pointer", boxShadow:"var(--shadow)",
-              transition:"transform .15s",
-            }}
-            onMouseOver={e => e.currentTarget.style.transform="translateY(-2px)"}
-            onMouseOut={e => e.currentTarget.style.transform="none"}
-          >
-            <div style={{ fontSize:28, flexShrink:0, color:"var(--accent)", fontWeight:300 }}>{v.icon}</div>
-            <div>
-              <div style={{ fontWeight:700, fontSize:15, color:"var(--text)" }}>{v.label}</div>
-              <div style={{ fontSize:12, color:"var(--text3)", marginTop:3 }}>{v.desc}</div>
-            </div>
-            <div style={{ marginLeft:"auto", color:"var(--text3)", fontSize:18 }}>›</div>
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
