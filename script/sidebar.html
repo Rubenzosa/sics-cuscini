@@ -437,140 +437,7 @@ function renderNavbar(){
     +'</div>';
 }
 
-// ── DASHBOARD ───────────────────────────────
-function renderDashboard(){
-  var kits=S.kits, gruppi=S.gruppi;
-  var scC=kits.filter(function(k){return statoKit(k)==="scaduto";}).length;
-  var crC=kits.filter(function(k){return statoKit(k)==="critico";}).length;
-  var atC=kits.filter(function(k){return statoKit(k)==="attenzione";}).length;
-  var buC=kits.filter(function(k){var s=statoKit(k);return s==="buono"||s==="regolare";}).length;
-  var scT=gruppi.filter(function(g){return statoGT(g)==="scaduto";}).length;
-  var crT=gruppi.filter(function(g){return statoGT(g)==="critico";}).length;
-  var atT=gruppi.filter(function(g){return statoGT(g)==="attenzione";}).length;
-  var buT=gruppi.filter(function(g){var s=statoGT(g);return s==="buono"||s==="regolare";}).length;
-  var urgC=scC+crC, urgT=scT+crT, urgTot=urgC+urgT;
 
-  var h="";
-  if(urgTot>0) h+='<div class="alert red">⚠ '+urgTot+' critici — Cuscini: '+urgC+' · Taglio: '+urgT+'</div>';
-
-  // Stats cuscini
-  h+='<div class="stat-block cuscini"><div style="font-size:10px;font-weight:800;color:#1a2b3c;opacity:.7;text-transform:uppercase;letter-spacing:.06em;">Cuscini di Sollevamento</div>'
-    +'<div class="stat-grid">'
-    +'<div class="stat-item"><div class="stat-lbl">Totali</div><div class="stat-n blue">'+kits.length+'</div></div>'
-    +'<div class="stat-item"><div class="stat-lbl">Critici</div><div class="stat-n red">'+(scC+crC)+'</div></div>'
-    +'<div class="stat-item"><div class="stat-lbl">Anno corr.</div><div class="stat-n amber">'+atC+'</div></div>'
-    +'<div class="stat-item"><div class="stat-lbl">In regola</div><div class="stat-n green">'+buC+'</div></div>'
-    +'</div></div>';
-
-  // Stats taglio
-  h+='<div class="stat-block taglio"><div style="font-size:10px;font-weight:800;color:#7a3500;opacity:.8;text-transform:uppercase;letter-spacing:.06em;">Gruppi da Taglio</div>'
-    +'<div class="stat-grid">'
-    +'<div class="stat-item"><div class="stat-lbl">Totali</div><div class="stat-n orange">'+gruppi.length+'</div></div>'
-    +'<div class="stat-item"><div class="stat-lbl">Critici</div><div class="stat-n red">'+(scT+crT)+'</div></div>'
-    +'<div class="stat-item"><div class="stat-lbl">Anno corr.</div><div class="stat-n amber">'+atT+'</div></div>'
-    +'<div class="stat-item"><div class="stat-lbl">In regola</div><div class="stat-n green">'+buT+'</div></div>'
-    +'</div></div>';
-
-  // Critici cuscini
-  var urgCuscini=kits.filter(function(k){var s=statoKit(k);return s==="scaduto"||s==="critico"||s==="attenzione";})
-    .sort(function(a,b){return (gg(a.dataRevisione)||9999)-(gg(b.dataRevisione)||9999);}).slice(0,4);
-  h+='<div class="card"><div class="card-h"><span class="card-t">Cuscini critici</span>'
-    +'<button class="card-a" onclick="setSistema(\'cuscini\');setView(\'kit\')">Tutti →</button></div>';
-  if(!urgCuscini.length) h+='<div class="empty">✓ Nessuno</div>';
-  urgCuscini.forEach(function(k){
-    var s=statoKit(k),g2=gg(k.dataRevisione);
-    h+='<div class="kit-row" onclick="apriKit(\''+esc(k.id)+'\')">'
-      +'<div class="kit-l">'+ring(g2,s,34)
-      +'<div><div class="kit-name">Kit '+esc(k.numero)+' — '+esc(k.nome)+'</div>'
-      +'<div class="kit-sub">'+esc(k.mezzo)+' · '+esc(k.dislocazione)+'</div></div></div>'
-      +'<div class="kit-r"><span class="pill '+s+'">'+lbl(s)+'</span>'
-      +'<div class="kit-date">'+(g2===null?"N/D":g2<0?"Scaduto da "+Math.abs(g2)+"gg":"Tra "+g2+"gg")+'</div></div></div>';
-  });
-  h+='</div>';
-
-  // Critici taglio
-  var urgTaglio=gruppi.filter(function(g){var s=statoGT(g);return s==="scaduto"||s==="critico"||s==="attenzione";})
-    .sort(function(a,b){return (gg(proxGT(a))||9999)-(gg(proxGT(b))||9999);}).slice(0,4);
-  h+='<div class="card"><div class="card-h"><span class="card-t">Taglio critici</span>'
-    +'<button class="card-a" onclick="setSistema(\'taglio\');setView(\'gt\')">Tutti →</button></div>';
-  if(!urgTaglio.length) h+='<div class="empty">✓ Nessuno</div>';
-  urgTaglio.forEach(function(g){
-    var s=statoGT(g), pr=proxGT(g), g2=gg(pr);
-    h+='<div class="kit-row" onclick="apriGT(\''+esc(g.id)+'\')">'
-      +'<div class="kit-l">'+ring(g2,s,34)
-      +'<div><div class="kit-name">'+esc(g.nome)+'</div>'
-      +'<div class="kit-sub">'+esc(g.mezzo)+' · '+esc(g.sistema)+' · '+esc(g.dislocazione)+'</div></div></div>'
-      +'<div class="kit-r"><span class="pill '+s+'">'+lbl(s)+'</span>'
-      +'<div class="kit-date">'+(g2===null?"N/D":g2<0?"Scaduto da "+Math.abs(g2)+"gg":"Tra "+g2+"gg")+'</div></div></div>';
-  });
-  h+='</div>';
-
-  // Timeline unificata
-  var all=[];
-  S.kits.filter(function(k){return k.dataRevisione&&k.stato!=="fuori_servizio";}).forEach(function(k){
-    all.push({tipo:"c",nome:"Kit "+k.numero+" — "+k.nome,sub:k.mezzo,data:k.dataRevisione,stato:statoKit(k),giorni:gg(k.dataRevisione),id:k.id});
-  });
-  S.gruppi.filter(function(g){return proxGT(g)&&g.stato!=="fuori_servizio";}).forEach(function(g){
-    var pr=proxGT(g);
-    all.push({tipo:"t",nome:g.nome,sub:g.mezzo+" · "+g.sistema,data:pr,stato:statoGT(g),giorni:gg(pr),id:g.id});
-  });
-  all.sort(function(a,b){return (a.giorni||9999)-(b.giorni||9999);});
-  h+='<div class="card"><div class="card-h"><span class="card-t">Prossime scadenze — tutti i sistemi</span></div><div class="tl">';
-  all.slice(0,7).forEach(function(item){
-    var dc=item.stato==="scaduto"||item.stato==="critico"?"red":item.stato==="attenzione"?"amber":item.stato==="buono"||item.stato==="regolare"?"green":"gray";
-    var fn=item.tipo==="t"?function(){apriGT(item.id);}:function(){apriKit(item.id);};
-    h+='<div class="tl-item" onclick="'+(item.tipo==="t"?"apriGT":"apriKit")+'(\''+esc(item.id)+'\')">'
-      +'<div class="tl-dot '+dc+'"></div>'
-      +'<div class="tl-dt">'+fmtD(item.data)
-      +'<span class="badge-tag '+(item.tipo==="t"?"badge-sistema-t":"badge-sistema-c")+'">'+(item.tipo==="t"?"TAGLIO":"CUSCINI")+'</span>'
-      +'</div>'
-      +'<div class="tl-ti">'+esc(item.nome)+'</div>'
-      +'<div class="tl-sb">'+esc(item.sub)+(item.giorni!==null?' <span style="font-weight:700;color:var(--'+(dc==="red"?"red":dc==="amber"?"amber":"green")+')">('+(item.giorni<0?"scad."+Math.abs(item.giorni)+"gg":"tra "+item.giorni+"gg")+')</span>':"")+'</div>'
-      +'</div>';
-  });
-  h+='</div></div>';
-  return h;
-}
-
-// ── KIT LIST ────────────────────────────────
-function renderKitList(){
-  var lista=S.kits.filter(function(k){
-    var s=statoKit(k);
-    var mS=S.filtroStato==="tutti"||(S.filtroStato==="critici"&&(s==="scaduto"||s==="critico"||s==="attenzione"))||(S.filtroStato==="regolari"&&(s==="buono"||s==="regolare"))||(S.filtroStato==="fuori"&&(k.stato==="fuori_servizio"||k.stato==="magazzino"));
-    var q=(S.search||"").toLowerCase();
-    var mQ=!q||(k.nome||"").toLowerCase().includes(q)||(k.mezzo||"").toLowerCase().includes(q)||String(k.numero).includes(q)||(k.dislocazione||"").toLowerCase().includes(q)||(k.componenti||[]).some(function(c){return (c.modello||"").toLowerCase().includes(q)||(c.matricola||"").toLowerCase().includes(q);});
-    return mS&&mQ;
-  });
-  var h='<div class="flex jb ic mb12"><span class="fw8 f13">Kit cuscini ('+lista.length+')</span></div>';
-  h+='<div class="search-w"><span class="search-ic">⌕</span><input class="search-i" id="srch" placeholder="Cerca kit, targa, matricola..." value="'+esc(S.search)+'" oninput="S.search=this.value;render()"/></div>';
-  h+='<div class="flex gap6 mb12" style="flex-wrap:wrap">';
-  [["tutti","Tutti"],["critici","Critici"],["regolari","In regola"],["fuori","F.U."]].forEach(function(f){
-    h+='<button class="btn-chip'+(S.filtroStato===f[0]?" active":"")+'" onclick="S.filtroStato=\''+f[0]+'\';render()">'+f[1]+'</button>';
-  });
-  h+='</div>';
-  // Sede chips
-  var sedi=[...new Set(S.kits.map(function(k){return k.dislocazione;}).filter(Boolean))].sort();
-  h+='<div class="flex gap6 mb12" style="flex-wrap:wrap;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Sede:</span>'
-    +'<button class="btn-chip'+(S.filtroSede.length===0?" active":"")+'" onclick="S.filtroSede=[];render()">Tutte</button>';
-  sedi.forEach(function(s){
-    h+='<button class="btn-chip'+(S.filtroSede.includes(s)?" active":"")+'" onclick="toggleSede(\''+esc(s)+'\')">'+esc(s)+'</button>';
-  });
-  h+='</div>';
-  lista=lista.filter(function(k){return !S.filtroSede.length||S.filtroSede.includes(k.dislocazione);});
-  if(!lista.length){ h+='<div class="empty">Nessun kit trovato</div>'; return h; }
-  h+='<div class="card">';
-  lista.forEach(function(k){
-    var s=statoKit(k), g2=gg(k.dataRevisione);
-    h+='<div class="kit-row" onclick="apriKit(\''+esc(k.id)+'\')">'
-      +'<div class="kit-l">'+ring(g2,s,34)
-      +'<div><div class="kit-name">Kit '+esc(k.numero)+' — '+esc(k.nome)+'</div>'
-      +'<div class="kit-sub">'+esc(k.mezzo)+' · '+esc(k.bar)+' bar · '+esc(k.dislocazione)+'</div></div></div>'
-      +'<div class="kit-r"><span class="pill '+s+'">'+lbl(s)+'</span>'
-      +'<div class="kit-date">'+(g2===null?"N/D":g2<0?Math.abs(g2)+"gg fa":g2+"gg")+'</div></div></div>';
-  });
-  h+='</div>';
-  return h;
-}
 
 // ── KIT DETAIL ──────────────────────────────
 function renderKitDetail(){
@@ -647,43 +514,6 @@ function renderKitDetail(){
   return h;
 }
 
-// ── GT LIST ─────────────────────────────────
-function renderGTList(){
-  var lista=S.gruppi.filter(function(g){
-    var s=statoGT(g);
-    var mS=S.filtroStato==="tutti"||(S.filtroStato==="critici"&&(s==="scaduto"||s==="critico"||s==="attenzione"))||(S.filtroStato==="regolari"&&(s==="buono"||s==="regolare"))||(S.filtroStato==="fuori"&&(g.stato==="fuori_servizio"||g.stato==="magazzino"));
-    var q=(S.search||"").toLowerCase();
-    var mQ=!q||(g.nome||"").toLowerCase().includes(q)||(g.mezzo||"").toLowerCase().includes(q)||String(g.numero).includes(q)||(g.marca||"").toLowerCase().includes(q)||(g.dislocazione||"").toLowerCase().includes(q)||(g.componenti||[]).some(function(c){return (c.modello||"").toLowerCase().includes(q)||(c.matricola||"").toLowerCase().includes(q);});
-    return mS&&mQ;
-  });
-  var h='<div class="flex jb ic mb12"><span class="fw8 f13">Kit gruppi taglio ('+lista.length+')</span></div>';
-  h+='<div class="search-w"><span class="search-ic">⌕</span><input class="search-i" id="srch" placeholder="Cerca nome, targa, marca, matricola..." value="'+esc(S.search)+'" oninput="S.search=this.value;render()"/></div>';
-  h+='<div class="flex gap6 mb12" style="flex-wrap:wrap">';
-  [["tutti","Tutti"],["critici","Critici"],["regolari","In regola"],["fuori","F.U."]].forEach(function(f){
-    h+='<button class="btn-chip'+(S.filtroStato===f[0]?" active":"")+'" onclick="S.filtroStato=\''+f[0]+'\';render()">'+f[1]+'</button>';
-  });
-  h+='</div>';
-  var sedi=[...new Set(S.gruppi.map(function(g){return g.dislocazione;}).filter(Boolean))].sort();
-  h+='<div class="flex gap6 mb12" style="flex-wrap:wrap;align-items:center"><span style="font-size:10px;font-weight:800;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">Sede:</span>'
-    +'<button class="btn-chip'+(S.filtroSede.length===0?" active":"")+'" onclick="S.filtroSede=[];render()">Tutte</button>';
-  sedi.forEach(function(s){h+='<button class="btn-chip'+(S.filtroSede.includes(s)?" active":"")+'" onclick="toggleSede(\''+esc(s)+'\')">'+esc(s)+'</button>';});
-  h+='</div>';
-  lista=lista.filter(function(g){return !S.filtroSede.length||S.filtroSede.includes(g.dislocazione);});
-  if(!lista.length){ h+='<div class="empty">Nessun kit trovato</div>'; return h; }
-  h+='<div class="card">';
-  lista.forEach(function(g){
-    var s=statoGT(g), pr=proxGT(g), g2=gg(pr);
-    var sistBadge='<span class="badge-tag '+(g.sistema==="elettrico"?"badge-sistema-c":"badge-sistema-t")+'">'+(g.sistema||"")+'</span>';
-    h+='<div class="kit-row" onclick="apriGT(\''+esc(g.id)+'\')">'
-      +'<div class="kit-l">'+ring(g2,s,34)
-      +'<div><div class="kit-name">'+esc(g.nome)+'</div>'
-      +'<div class="kit-sub">'+esc(g.mezzo)+' · '+esc(g.marca)+' '+sistBadge+' · '+esc(g.dislocazione)+'</div></div></div>'
-      +'<div class="kit-r"><span class="pill '+s+'">'+lbl(s)+'</span>'
-      +'<div class="kit-date">'+(g2===null?"N/D":g2<0?Math.abs(g2)+"gg fa":g2+"gg")+'</div></div></div>';
-  });
-  h+='</div>';
-  return h;
-}
 
 // ── GT DETAIL ───────────────────────────────
 function renderGTDetail(){
@@ -891,103 +721,8 @@ function eliminaDoc(docId){
     .eliminaDocumento(docId);
 }
 
-// ── MEZZI CUSCINI ───────────────────────────
-function renderMezzi(){
-  var attivi=S.kits.filter(function(k){return k.stato==="attivo";});
-  var h='<div class="fw8 f13 mb12">Mezzi — Cuscini ('+attivi.length+')</div>';
-  var locs={};
-  S.kits.forEach(function(k){if(k.dislocazione) locs[k.dislocazione]=(locs[k.dislocazione]||0)+1;});
-  h+='<div class="flex gap6 mb12" style="flex-wrap:wrap">';
-  Object.keys(locs).forEach(function(loc){h+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px"><span class="fw7">'+esc(loc)+'</span> <span class="badge-tag badge-sistema-c" style="margin-left:4px">'+locs[loc]+'</span></div>';});
-  h+='</div><div class="kanban-grid">';
-  attivi.forEach(function(k){
-    var s=statoKit(k), g2=gg(k.dataRevisione);
-    h+='<div class="k-card" onclick="apriKit(\''+esc(k.id)+'\')">'
-      +'<div class="k-accent '+s+'"></div>'
-      +'<div class="flex jb ic" style="margin-top:4px"><div>'
-      +'<div class="k-nome">'+esc(k.nome)+'</div>'
-      +'<div class="k-targa">'+esc(k.mezzo)+'</div></div>'
-      +ring(g2,s,36)+'</div>'
-      +'<div class="flex gap6 mt8"><span class="pill '+s+'">'+lbl(s)+'</span>'
-      +'<span style="font-size:10px;color:var(--text3)">'+esc(k.bar)+' bar</span></div>'
-      +'<div style="font-size:10px;color:var(--text3);margin-top:4px">📍 '+esc(k.dislocazione||"—")+'</div>'
-      +'<div style="font-size:10px;color:var(--text3)">Rev. '+fmtD(k.dataRevisione)+'</div></div>';
-  });
-  h+='</div>';
-  return h;
-}
 
-// ── MEZZI TAGLIO ────────────────────────────
-function renderMezziGT(){
-  var attivi=S.gruppi.filter(function(g){return g.stato==="attivo";});
-  var h='<div class="fw8 f13 mb12">Mezzi — Gruppi taglio ('+attivi.length+')</div>';
-  var locs={};
-  S.gruppi.forEach(function(g){if(g.dislocazione) locs[g.dislocazione]=(locs[g.dislocazione]||0)+1;});
-  h+='<div class="flex gap6 mb12" style="flex-wrap:wrap">';
-  Object.keys(locs).forEach(function(loc){h+='<div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:11px"><span class="fw7">'+esc(loc)+'</span> <span class="badge-tag badge-sistema-t" style="margin-left:4px">'+locs[loc]+'</span></div>';});
-  h+='</div><div class="kanban-grid">';
-  attivi.forEach(function(g){
-    var s=statoGT(g), pr=proxGT(g), g2=gg(pr);
-    h+='<div class="k-card" onclick="apriGT(\''+esc(g.id)+'\')">'
-      +'<div class="k-accent '+s+'"></div>'
-      +'<div class="flex jb ic" style="margin-top:4px"><div>'
-      +'<div class="k-nome">'+esc(g.nome)+'</div>'
-      +'<div class="k-targa">'+esc(g.mezzo)+'</div>'
-      +'<div style="margin-top:3px"><span class="badge-tag '+(g.sistema==="elettrico"?"badge-sistema-c":"badge-sistema-t")+'">'+esc(g.sistema||"")+'</span></div>'
-      +'</div>'+ring(g2,s,36)+'</div>'
-      +'<div class="flex gap6 mt8"><span class="pill '+s+'">'+lbl(s)+'</span>'
-      +'<span style="font-size:10px;color:var(--text3)">'+esc(g.marca||"")+'</span></div>'
-      +'<div style="font-size:10px;color:var(--text3);margin-top:4px">📍 '+esc(g.dislocazione||"—")+'</div>'
-      +'<div style="font-size:10px;color:var(--text3)">'+(pr&&pr!=="NO REVISIONE"?"Rev. "+fmtD(pr):"No revisione")+'</div></div>';
-  });
-  h+='</div>';
-  return h;
-}
 
-// ── SCADENZE ────────────────────────────────
-function renderScadenze(){
-  var all=[];
-  S.kits.filter(function(k){return k.stato!=="fuori_servizio";}).forEach(function(k){
-    all.push({tipo:"c",nome:"Kit "+k.numero+" — "+k.nome,mezzo:k.mezzo,extra:k.bar+" bar",dislocazione:k.dislocazione,data:k.dataRevisione,stato:statoKit(k),giorni:gg(k.dataRevisione),id:k.id});
-  });
-  S.gruppi.filter(function(g){return g.stato!=="fuori_servizio";}).forEach(function(g){
-    var pr=proxGT(g);
-    all.push({tipo:"t",nome:g.nome,mezzo:g.mezzo,extra:g.sistema+" · "+g.marca,dislocazione:g.dislocazione,data:pr,stato:statoGT(g),giorni:gg(pr),id:g.id});
-  });
-  all.sort(function(a,b){return (a.giorni||9999)-(b.giorni||9999);});
-
-  var annoOggi=new Date().getFullYear();
-  var scaduti=all.filter(function(i){return i.stato==="scaduto";});
-  var critici=all.filter(function(i){return i.stato==="critico";});
-  var attenzione=all.filter(function(i){return i.stato==="attenzione";});
-  var buoni=all.filter(function(i){return i.stato==="buono";});
-  var regolari=all.filter(function(i){return i.stato==="regolare";});
-
-  var h='<div class="fw8 f13 mb12">Scadenze — tutti i sistemi</div>';
-
-  function gruppo(tit,items,colore){
-    if(!items.length) return "";
-    var r='<div style="border-left:3px solid '+colore+';padding-left:10px;margin-bottom:14px">'
-      +'<div style="font-size:11px;font-weight:800;color:'+colore+';margin-bottom:8px">'+tit+' ('+items.length+')</div>';
-    items.forEach(function(item){
-      r+='<div class="kit-row" onclick="'+(item.tipo==="t"?"apriGT":"apriKit")+'(\''+esc(item.id)+'\')">'
-        +'<div class="kit-l">'+ring(item.giorni,item.stato,32)
-        +'<div><div class="kit-name">'+esc(item.nome)+'</div>'
-        +'<div class="kit-sub">'+esc(item.mezzo)+' · '+esc(item.extra)+' · '+esc(item.dislocazione)
-        +' <span class="badge-tag '+(item.tipo==="t"?"badge-sistema-t":"badge-sistema-c")+'">'+(item.tipo==="t"?"T":"C")+'</span></div></div></div>'
-        +'<div class="kit-r"><span class="pill '+item.stato+'">'+lbl(item.stato)+'</span>'
-        +'<div class="kit-date">'+(item.giorni===null?"N/D":item.giorni<0?Math.abs(item.giorni)+"gg fa":item.giorni+"gg")+'</div></div></div>';
-    });
-    return r+'</div>';
-  }
-
-  h+=gruppo("Scaduti",scaduti,"#e24b4a");
-  h+=gruppo("Entro 3 mesi",critici,"#e24b4a");
-  h+=gruppo("Nel "+annoOggi,attenzione,"#ba7517");
-  h+=gruppo("Nel "+(annoOggi+1),buoni,"#639922");
-  h+=gruppo("Regolari",regolari,"#639922");
-  return h;
-}
 
 // ── MODALI ──────────────────────────────────
 function renderModal(){
@@ -1160,7 +895,6 @@ function delPromemoria(id){
 function setView(v){ S.view=v; S.sel=null; S.search=""; S.filtroStato="tutti"; S.filtroSede=[]; S.openId=null; render(); }
 function setSistema(s){ S.sistema=s; applyTheme(); render(); }
 function toggleDark(){ S.dark=!S.dark; applyTheme(); render(); }
-function toggleSede(s){ S.filtroSede=S.filtroSede.includes(s)?S.filtroSede.filter(function(x){return x!==s;}):[...S.filtroSede,s]; render(); }
 
 function apriKit(id){
   S.sel=S.kits.find(function(k){return k.id===id;})||null;
