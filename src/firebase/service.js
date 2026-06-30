@@ -279,6 +279,12 @@ export async function getManutenzioniGT(gtId) {
     .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
 }
 
+export async function getAllManutenzioniGT() {
+  const snap = await getDocs(collection(db, GT_MANUTENZIONE));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+}
+
 
 // ─── DOCUMENTI (metadati su Firestore, file su Google Drive) ──
 const DOCS = "documenti";
@@ -336,6 +342,29 @@ export async function aggiornaRevisionePianificata(id, data) {
 
 export async function deleteRevisionePianificata(id) {
   await deleteDoc(doc(db, PLAN, id));
+}
+
+// ─── PROMEMORIA CALENDARIO ───────────────────────────────────
+const PROMEMORIA = "promemoria";
+
+export async function getAllPromemoria() {
+  const snap = await getDocs(collection(db, PROMEMORIA));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.data || "").localeCompare(b.data || ""));
+}
+
+export async function salvaPromemoria(p) {
+  // p: { data, sistema, titolo, note }
+  const ref2 = await addDoc(collection(db, PROMEMORIA), {
+    ...p,
+    dataCreazione: new Date().toISOString(),
+    timestamp: serverTimestamp(),
+  });
+  return ref2.id;
+}
+
+export async function deletePromemoria(id) {
+  await deleteDoc(doc(db, PROMEMORIA, id));
 }
 
 // ─── ALLEGATI FUORI USO (Firebase Storage + Firestore metadata) ──────────────
