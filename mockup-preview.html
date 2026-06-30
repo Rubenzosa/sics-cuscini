@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SICS 78 — Mockup KIT + Calendario (stile attuale)</title>
+<style>
+  :root{
+    --bg:#e8edf2; --bg2:#e0e5ea; --bg3:#f0f4f7;
+    --neu-out:5px 5px 10px #c5cace,-5px -5px 10px #ffffff;
+    --neu-in:inset 4px 4px 8px #c5cace,inset -4px -4px 8px #ffffff;
+    --border:#d4d9de; --border2:#c8cdd2;
+    --text:#2d3748; --text2:#718096; --text3:#a0aec0;
+    --cuscini:#5c6bc0; --taglio:#f9a825; --accent:#5c6bc0;
+    --red:#ef5350; --red-bg:#fde8e8; --red-text:#c62828;
+    --amber:#f9a825; --amber-bg:#fef3cd; --amber-text:#e65100;
+    --green:#66bb6a; --green-bg:#e8f5e9; --green-text:#2e7d32;
+    --blue-bg:#eaecf7; --blue-text:#3949ab;
+    --radius:18px; --radius-sm:12px;
+  }
+  [data-sistema="taglio"]{ --accent:#f9a825; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;padding:24px 0 60px;}
+  .wrap{max-width:780px;margin:0 auto;padding:0 18px;}
+  .note{max-width:780px;margin:0 auto 18px;padding:0 18px;color:var(--text2);font-size:13px;}
+
+  /* TOPBAR */
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--bg);padding:10px 16px;border-radius:var(--radius);box-shadow:var(--neu-out);margin-bottom:6px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:14px;}
+  .brand img{height:50px;width:50px;object-fit:contain;}
+  .sel{display:flex;gap:4px;background:var(--bg);box-shadow:var(--neu-in);border-radius:50px;padding:4px;}
+  .sel-btn{padding:6px 16px;border:none;border-radius:40px;font:inherit;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;background:transparent;color:var(--text3);}
+  .sel-btn.active{background:var(--bg);box-shadow:var(--neu-out);color:var(--cuscini);}
+  .sel-btn.active.taglio{color:var(--taglio);}
+  .right{display:flex;align-items:center;gap:10px;}
+  .badge-crit{background:var(--red-bg);color:var(--red-text);font-size:10px;font-weight:800;padding:5px 10px;border-radius:20px;letter-spacing:.03em;}
+  .tt{width:38px;height:38px;border:none;border-radius:50%;background:var(--bg);box-shadow:var(--neu-out);cursor:pointer;font-size:15px;color:var(--text2);}
+  .band{height:3px;border-radius:3px;margin:0 2px 18px;background:linear-gradient(90deg,var(--cuscini),#3949ab);transition:background .4s;}
+  [data-sistema="taglio"] .band{background:linear-gradient(90deg,var(--taglio),#e65100);}
+
+  /* VIEW TOGGLE */
+  .views{display:flex;gap:6px;margin-bottom:16px;}
+  .view-btn{padding:9px 22px;border:none;border-radius:40px;font:inherit;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;background:var(--bg);box-shadow:var(--neu-out);color:var(--text3);}
+  .view-btn.active{box-shadow:var(--neu-in);color:var(--accent);}
+
+  /* STAT */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+  .stat{background:var(--bg);box-shadow:var(--neu-out);border-radius:var(--radius-sm);padding:12px 14px;}
+  .stat .n{font-size:24px;font-weight:900;line-height:1;letter-spacing:-.5px;}
+  .stat .l{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-top:6px;}
+
+  .sec-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+  .sec-title{font-size:18px;font-weight:900;letter-spacing:-.3px;}
+  .search{position:relative;flex:1;max-width:280px;}
+  .search input{width:100%;padding:8px 14px 8px 34px;border:1px solid var(--border2);border-radius:20px;font:inherit;font-size:13px;background:var(--bg2);color:var(--text);outline:none;box-shadow:var(--neu-in);}
+  .search span{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text3);}
+
+  /* ACCORDION KIT */
+  .kit{background:var(--bg);box-shadow:var(--neu-out);border-radius:var(--radius);margin-bottom:12px;overflow:hidden;border-left:4px solid var(--border);}
+  .kit.s-scaduto,.kit.s-critico{border-left-color:var(--red);}
+  .kit.s-attenzione{border-left-color:var(--amber);}
+  .kit.s-buono,.kit.s-regolare{border-left-color:var(--green);}
+  .kit-head{display:flex;align-items:center;gap:14px;padding:14px 18px;cursor:pointer;width:100%;background:none;border:none;font:inherit;text-align:left;color:inherit;}
+  .kit-num{font-size:30px;font-weight:900;color:var(--accent);line-height:1;letter-spacing:-1px;min-width:46px;}
+  .kit-main{flex:1;min-width:0;}
+  .kit-name{font-weight:700;font-size:15px;}
+  .kit-mezzo{font-size:12px;color:var(--text3);font-family:monospace;margin-top:1px;}
+  .kit-info{font-size:11px;color:var(--text2);margin-top:3px;}
+  .pill{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:4px 10px;border-radius:20px;white-space:nowrap;}
+  .pill.s-scaduto,.pill.s-critico{background:var(--red-bg);color:var(--red-text);}
+  .pill.s-attenzione{background:var(--amber-bg);color:var(--amber-text);}
+  .pill.s-buono,.pill.s-regolare{background:var(--green-bg);color:var(--green-text);}
+  .caret{width:9px;height:9px;border-right:2px solid var(--text3);border-bottom:2px solid var(--text3);transform:rotate(45deg);transition:transform .3s;flex-shrink:0;margin-left:2px;}
+  .kit.open .caret{transform:rotate(-135deg);}
+
+  .ring{position:relative;width:52px;height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .ring svg{position:absolute;top:0;left:0;transform:rotate(-90deg);}
+  .ring .lab{position:relative;font-size:11px;font-weight:800;line-height:1;text-align:center;}
+
+  .kit-body{max-height:0;overflow:hidden;transition:max-height .4s ease;}
+  .kit.open .kit-body{max-height:900px;}
+  .body-inner{padding:4px 18px 18px;}
+  .grid4{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:14px;}
+  .field{background:var(--bg2);box-shadow:var(--neu-in);border-radius:var(--radius-sm);padding:10px 12px;}
+  .field .l{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin-bottom:3px;}
+  .field .v{font-size:13px;font-weight:700;}
+  .sub{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);margin:0 0 8px;}
+  .comp{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--bg);box-shadow:var(--neu-out);border-radius:var(--radius-sm);margin-bottom:6px;}
+  .comp .tipo{font-size:12px;font-weight:700;flex:1;min-width:0;}
+  .comp .mod{font-size:10px;color:var(--text3);}
+  .lucca{font-family:monospace;font-weight:800;font-size:10px;color:var(--blue-text);background:var(--blue-bg);padding:3px 7px;border-radius:5px;white-space:nowrap;}
+  .dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+  .dot.ok{background:var(--green);} .dot.warn{background:var(--amber);} .dot.bad{background:var(--red);}
+  .acts{display:flex;gap:8px;margin-top:14px;}
+  .btn{flex:1;padding:10px;border:none;border-radius:var(--radius-sm);font:inherit;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;background:var(--bg);box-shadow:var(--neu-out);color:var(--text2);}
+  .btn.primary{flex:2;background:var(--accent);color:#fff;}
+
+  /* BANNER SCORTA */
+  .scorta{display:flex;align-items:center;gap:12px;background:var(--amber-bg);border-left:4px solid var(--amber);border-radius:var(--radius-sm);padding:11px 16px;margin-bottom:18px;box-shadow:var(--neu-out);}
+  .scorta .tag-s{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#fff;background:var(--amber);padding:3px 9px;border-radius:20px;white-space:nowrap;}
+  .scorta .txt{flex:1;font-size:13px;color:var(--amber-text);font-weight:600;}
+  .scorta .x{background:none;border:none;color:var(--amber-text);cursor:pointer;font-size:15px;opacity:.6;line-height:1;}
+
+  /* CALENDARIO */
+  .legend{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px;font-size:11px;align-items:center;}
+  .legend .it{display:flex;align-items:center;gap:6px;color:var(--text2);}
+  .legend .sw{width:12px;height:12px;border-radius:3px;flex-shrink:0;}
+  .legend .sw.cus{background:var(--cuscini);} .legend .sw.tag{background:var(--taglio);}
+  .legend .sw.crit{background:transparent;border:2px solid var(--red);}
+  .cal{background:var(--bg);box-shadow:var(--neu-out);border-radius:var(--radius);overflow:hidden;margin-bottom:18px;}
+  .cal-nav{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;}
+  .cal-nav b{font-size:16px;font-weight:800;}
+  .cal-nav button{width:34px;height:34px;border:none;border-radius:50%;background:var(--bg);box-shadow:var(--neu-out);cursor:pointer;font-size:16px;color:var(--text2);}
+  .dow{display:grid;grid-template-columns:repeat(7,1fr);}
+  .dow div{text-align:center;padding:8px 4px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text3);}
+  .grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:0 12px 14px;}
+  .cell{min-height:78px;border-radius:10px;background:var(--bg2);box-shadow:var(--neu-in);padding:6px 6px 4px;display:flex;flex-direction:column;gap:3px;cursor:pointer;}
+  .cell.empty{background:transparent;box-shadow:none;cursor:default;}
+  .cell.today{outline:2px solid var(--accent);outline-offset:-2px;}
+  .cell .d{font-size:11px;font-weight:700;color:var(--text2);}
+  .cell.today .d{color:var(--accent);font-weight:900;}
+  .ev{font-size:9px;font-weight:800;color:#fff;border-radius:4px;padding:2px 5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .ev.cus{background:var(--cuscini);} .ev.tag{background:var(--taglio);color:#5c3a00;}
+  .ev.crit{box-shadow:0 0 0 2px var(--red);}
+  .more{font-size:9px;color:var(--text3);font-weight:700;}
+  .day-detail{background:var(--bg);box-shadow:var(--neu-out);border-radius:var(--radius);padding:14px 18px;}
+  .day-detail h4{font-size:13px;font-weight:800;margin-bottom:10px;text-transform:capitalize;}
+  .de{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);background:var(--bg2);box-shadow:var(--neu-in);margin-bottom:6px;border-left:4px solid var(--cuscini);}
+  .de.tag{border-left-color:var(--taglio);}
+  .de .tag-l{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:10px;color:#fff;background:var(--cuscini);}
+  .de.tag .tag-l{background:var(--taglio);color:#5c3a00;}
+  .de .nm{flex:1;font-size:13px;font-weight:700;}
+  .de .ty{font-size:10px;color:var(--text3);text-transform:uppercase;font-weight:700;}
+</style>
+</head>
+<body data-sistema="cuscini">
+
+  <div class="note">Mockup — <b>stile attuale</b> (neumorfismo, logo reale, zero emoji). Logica: una pagina, vista <b>KIT</b> (accordion) o <b>Calendario</b> (eventi per sistema: indigo cuscini / ambra taglio, bordo rosso se scaduto/critico).</div>
+
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <img src="public/logo78.png" alt="Logo 78">
+        <span>SICS — VVF Siena</span>
+      </div>
+      <div class="sel">
+        <button class="sel-btn active" id="b-cuscini" onclick="setSys('cuscini')">Cuscini</button>
+        <button class="sel-btn taglio" id="b-taglio" onclick="setSys('taglio')">Taglio</button>
+      </div>
+      <div class="right">
+        <span class="badge-crit">3 CRITICI</span>
+        <button class="tt">☾</button>
+      </div>
+    </div>
+    <div class="band"></div>
+
+    <div class="views">
+      <button class="view-btn active" id="v-kit" onclick="setView('kit')">KIT</button>
+      <button class="view-btn" id="v-cal" onclick="setView('cal')">Calendario</button>
+    </div>
+
+    <!-- VISTA KIT -->
+    <div id="view-kit">
+      <div class="stats">
+        <div class="stat"><div class="n" id="st-op">12</div><div class="l">Operativi</div></div>
+        <div class="stat"><div class="n" id="st-sc" style="color:var(--amber-text)">3</div><div class="l">In scadenza</div></div>
+        <div class="stat"><div class="n" id="st-ex" style="color:var(--red-text)">1</div><div class="l">Scaduti</div></div>
+        <div class="stat"><div class="n" id="st-mag" style="color:var(--text3)">2</div><div class="l">Magazzino</div></div>
+      </div>
+      <div class="scorta" id="scorta" style="display:none">
+        <span class="tag-s">Suggerimento</span>
+        <div class="txt" id="scorta-txt"></div>
+        <button class="x" title="Ignora" onclick="this.parentElement.style.display='none'">&times;</button>
+      </div>
+      <div class="sec-head">
+        <div class="sec-title">KIT <span id="sysL">Cuscini</span></div>
+        <div class="search"><span>&#9906;</span><input placeholder="Cerca numero, matricola, mezzo..."></div>
+      </div>
+      <div id="list"></div>
+    </div>
+
+    <!-- VISTA CALENDARIO -->
+    <div id="view-cal" style="display:none">
+      <div class="legend">
+        <div class="it"><span class="sw cus"></span>Cuscini</div>
+        <div class="it"><span class="sw tag"></span>Taglio</div>
+        <div class="it"><span class="sw crit"></span>Scaduto / critico</div>
+        <div class="it" style="margin-left:auto;color:var(--text3)">Scadenze revisione + pianificate</div>
+      </div>
+      <div class="cal">
+        <div class="cal-nav"><button>&lsaquo;</button><b>Giugno 2026</b><button>&rsaquo;</button></div>
+        <div class="dow"><div>Lun</div><div>Mar</div><div>Mer</div><div>Gio</div><div>Ven</div><div>Sab</div><div>Dom</div></div>
+        <div class="grid" id="cal-grid"></div>
+      </div>
+      <div class="day-detail" id="day-detail"></div>
+    </div>
+  </div>
+
+<script>
+const today = new Date('2026-06-30');
+function giorni(d){ if(!d) return null; return Math.floor((new Date(d)-today)/86400000); }
+function stato(d){ const g=giorni(d); if(g===null) return 'senza'; if(g<0) return 'scaduto'; if(g<=90) return 'critico'; const ar=new Date(d).getFullYear(),ao=today.getFullYear(); if(ar===ao) return 'attenzione'; if(ar===ao+1) return 'buono'; return 'regolare'; }
+const statoLab={scaduto:'Scaduto',critico:'Critico',attenzione:'Attenzione',buono:'Buono',regolare:'Regolare',senza:'Senza data'};
+const ringColor={scaduto:'#e24b4a',critico:'#e24b4a',attenzione:'#ba7517',buono:'#639922',regolare:'#639922',senza:'#888'};
+const ringPct={scaduto:0,critico:.08,attenzione:.35,buono:.7,regolare:1,senza:.5};
+
+const data={
+  cuscini:{stats:{op:12,sc:3,ex:1,mag:2},scorta:2,scortaLab:'cuscino',kits:[
+    {numero:11,nome:'APS ACTROS',mezzo:'VF 24491',bar:8,sede:'Sede Centrale',rev:'2025-09-25',ultimaRev:'2024-09-25',
+     comp:[['CUSCINO 47X52','VETTER ARAMIDE V18','CS 8 SI 24','ok'],['CENTRALINA','VETTER','CN 8 SI 8','ok'],['RIDUTTORE','—','RP 8 SI 9','warn'],['TUBO 5MT','—','TB 8 SI 28','ok']]},
+    {numero:4,nome:'40/10',mezzo:'VF 16701',bar:8,sede:'Sede Centrale',rev:'2026-09-25',ultimaRev:'2025-09-25',
+     comp:[['CUSCINO 60X60','MAXIFORCE','CS 8 SI 1','ok'],['CENTRALINA','SILVANI','CN 8 SI 1','ok'],['RIDUTTORE','EWO','RP 8 SI 1','ok'],['TUBO','—','TB 8 SI 1','warn']]},
+    {numero:18,nome:'APS 180 Montalcino',mezzo:'VF 30725',bar:8,sede:'Montalcino',rev:'2026-09-25',ultimaRev:'2025-09-25',
+     comp:[['CUSCINO 48X58','VETTER ARAMIDE V20','CS 8 SI 13','ok'],['CENTRALINA','VETTER AIR CU','CN 8 SI 5','ok'],['RIDUTTORE','OXYTURBO','RP 8 SI 6','ok']]},
+  ]},
+  taglio:{stats:{op:6,sc:2,ex:0,mag:0},scorta:0,scortaLab:'gruppo da taglio',kits:[
+    {numero:2,nome:'APS VOLVO',mezzo:'VF 26504',bar:'720 bar',sede:'Sede Centrale',rev:'2026-07-15',ultimaRev:'2024-07-15',
+     comp:[['CESOIA','HOLMATRO CU','CT 1','warn'],['DIVARICATORE','HOLMATRO SP','DV 1','ok'],['POMPA','HOLMATRO DUO','PM 1','ok']]},
+    {numero:5,nome:'POLISOCCORSO',mezzo:'VF 29068',bar:'720 bar',sede:'Sede Centrale',rev:'2027-02-10',ultimaRev:'2025-02-10',
+     comp:[['CESOIA','WEBER RSU','CT 2','ok'],['DIVARICATORE','WEBER SPS','DV 2','ok']]},
+  ]}
+};
+
+// Eventi calendario Giugno 2026 (giorno -> [{sistema,nome,tipo,crit}])
+const cal={
+  4:[{s:'cuscini',n:'Kit 4 — 40/10',t:'Scadenza',crit:true}],
+  9:[{s:'taglio',n:'Kit 2 — APS VOLVO',t:'Revisione pianificata',crit:false}],
+  12:[{s:'cuscini',n:'Kit 18 — APS 180',t:'Scadenza',crit:false},{s:'taglio',n:'Kit 5 — Polisoccorso',t:'Revisione',crit:false}],
+  18:[{s:'cuscini',n:'Kit 11 — APS ACTROS',t:'Scadenza',crit:true}],
+  25:[{s:'taglio',n:'Kit 2 — APS VOLVO',t:'Revisione pianificata',crit:false}],
+};
+
+let sys='cuscini', view='kit';
+
+function ring(g,s){
+  const r=20,c=2*Math.PI*r,off=c*(1-ringPct[s]),col=ringColor[s];
+  const abs=Math.abs(g??0); let lab = g===null?'N/D':g<0?abs+'<br>fa':g>999?'OK':g>99?g+'<br>gg':g+'g';
+  return `<div class="ring"><svg width="52" height="52" viewBox="0 0 52 52"><circle fill="none" stroke="var(--border)" stroke-width="3.5" cx="26" cy="26" r="20"/><circle fill="none" stroke="${col}" stroke-width="3.5" stroke-linecap="round" cx="26" cy="26" r="20" stroke-dasharray="${c}" stroke-dashoffset="${off}"/></svg><div class="lab" style="color:${col}">${lab}</div></div>`;
+}
+function fmt(d){ if(!d) return 'N/D'; return new Date(d).toLocaleDateString('it-IT',{day:'2-digit',month:'2-digit',year:'numeric'}); }
+
+function renderKits(){
+  const d=data[sys];
+  document.getElementById('list').innerHTML=d.kits.map((k,i)=>{
+    const s=stato(k.rev), g=giorni(k.rev);
+    return `<div class="kit s-${s}" id="kit-${i}">
+      <button class="kit-head" onclick="tog(${i})">
+        <div class="kit-num">${k.numero}</div>
+        <div class="kit-main"><div class="kit-name">${k.nome}</div><div class="kit-mezzo">${k.mezzo}</div><div class="kit-info">${k.bar}${typeof k.bar==='number'?' bar':''} · ${k.sede}</div></div>
+        ${ring(g,s)}
+        <span class="pill s-${s}">${statoLab[s]}</span>
+        <span class="caret"></span>
+      </button>
+      <div class="kit-body"><div class="body-inner">
+        <div class="grid4">
+          <div class="field"><div class="l">Mezzo</div><div class="v">${k.mezzo}</div></div>
+          <div class="field"><div class="l">Ultima revisione</div><div class="v">${fmt(k.ultimaRev)}</div></div>
+          <div class="field"><div class="l">Prossima scadenza</div><div class="v" style="color:${ringColor[s]}">${fmt(k.rev)}</div></div>
+          <div class="field"><div class="l">Stato</div><div class="v" style="color:${ringColor[s]}">${statoLab[s]}</div></div>
+        </div>
+        <div class="sub">Seriali componenti (${k.comp.length})</div>
+        ${k.comp.map(c=>`<div class="comp"><div class="dot ${c[3]}"></div><div class="tipo">${c[0]}<div class="mod">${c[1]}</div></div><span class="lucca">${c[2]}</span></div>`).join('')}
+        <div class="acts"><button class="btn">Storico</button><button class="btn">Sposta</button><button class="btn primary">Revisiona</button></div>
+      </div></div>
+    </div>`;
+  }).join('');
+}
+function tog(i){ document.getElementById('kit-'+i).classList.toggle('open'); }
+
+function renderCal(){
+  // Giugno 2026: 1 giu = lunedì (offset 0), 30 giorni
+  let html='';
+  for(let d=1; d<=30; d++){
+    const evs=cal[d]||[];
+    const isToday=d===30;
+    const chips=evs.slice(0,2).map(e=>`<div class="ev ${e.s==='cuscini'?'cus':'tag'} ${e.crit?'crit':''}">${e.n.split('—')[0].trim()}</div>`).join('');
+    const more=evs.length>2?`<div class="more">+${evs.length-2}</div>`:'';
+    html+=`<div class="cell ${isToday?'today':''}" onclick="dayDetail(${d})"><div class="d">${d}${isToday?' · oggi':''}</div>${chips}${more}</div>`;
+  }
+  document.getElementById('cal-grid').innerHTML=html;
+  dayDetail(12);
+}
+function dayDetail(d){
+  const evs=cal[d]||[];
+  const box=document.getElementById('day-detail');
+  if(!evs.length){ box.innerHTML=`<h4>${d} giugno 2026</h4><div style="color:var(--text3);font-size:13px">Nessun evento.</div>`; return; }
+  box.innerHTML=`<h4>${d} giugno 2026</h4>`+evs.map(e=>`<div class="de ${e.s==='taglio'?'tag':''}"><span class="tag-l">${e.s==='taglio'?'Taglio':'Cuscini'}</span><div class="nm">${e.n}<div class="ty">${e.t}</div></div></div>`).join('');
+}
+
+function setSys(s){
+  sys=s; document.body.setAttribute('data-sistema',s);
+  document.getElementById('sysL').textContent = s==='cuscini'?'Cuscini':'Taglio';
+  document.getElementById('b-cuscini').classList.toggle('active',s==='cuscini');
+  document.getElementById('b-taglio').classList.toggle('active',s==='taglio');
+  // stat dinamiche
+  const st=data[s].stats;
+  document.getElementById('st-op').textContent=st.op;
+  document.getElementById('st-sc').textContent=st.sc;
+  document.getElementById('st-ex').textContent=st.ex;
+  document.getElementById('st-mag').textContent=st.mag;
+  // banner scorta: visibile se scorta magazzino = 0
+  const sc=document.getElementById('scorta');
+  if(data[s].scorta===0){
+    sc.style.display='flex';
+    document.getElementById('scorta-txt').innerHTML=`Nessun <b>${data[s].scortaLab}</b> di scorta in magazzino — valuta un acquisto.`;
+  } else { sc.style.display='none'; }
+  renderKits();
+}
+function setView(v){
+  view=v;
+  document.getElementById('view-kit').style.display = v==='kit'?'':'none';
+  document.getElementById('view-cal').style.display = v==='cal'?'':'none';
+  document.getElementById('v-kit').classList.toggle('active',v==='kit');
+  document.getElementById('v-cal').classList.toggle('active',v==='cal');
+  if(v==='cal') renderCal();
+}
+renderKits();
+setTimeout(()=>tog(0),400);
+</script>
+</body>
+</html>
