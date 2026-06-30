@@ -1,0 +1,65 @@
+============================================================
+SICS 78 — GUIDA: aggiornare la Dashboard dentro il foglio Google
+============================================================
+
+La Dashboard che si apre dal foglio ("SICS — VVF Siena -> Apri Dashboard")
+e' un programma separato che vive DENTRO il foglio (Apps Script).
+Va aggiornata a mano copiando 2 file dal progetto. Bastano 5 minuti.
+
+File da copiare (sono nel progetto, cartella "script"):
+  1) script/Code.gs
+  2) script/sidebar.html
+
+------------------------------------------------------------
+PASSI
+------------------------------------------------------------
+
+1. APRI IL FOGLIO
+   Apri il foglio "SICS - VVF Siena":
+   https://docs.google.com/spreadsheets/d/1HZLMSEF15mHpwhLQBzBJ6RAQ4CFys3pOfvoAp9B-EbA/edit
+
+2. APRI L'EDITOR DEGLI SCRIPT
+   Menu in alto: Estensioni -> Apps Script
+   Si apre una nuova scheda con l'editor del codice.
+
+3. AGGIORNA IL CODICE (Code.gs)
+   - A sinistra clicca sul file "Codice.gs" (oppure "Code.gs").
+   - Seleziona tutto (Ctrl+A) e cancella.
+   - Apri sul PC il file  script/Code.gs , copia TUTTO (Ctrl+A, Ctrl+C)
+     e incolla nell'editor (Ctrl+V).
+
+4. AGGIORNA LA DASHBOARD (sidebar.html)
+   - A sinistra clicca sul file "sidebar.html".
+   - Seleziona tutto e cancella.
+   - Apri  script/sidebar.html , copia tutto e incolla.
+
+5. SALVA
+   Icona del dischetto, oppure Ctrl+S. Salva entrambi i file.
+
+6. RICARICA IL FOGLIO
+   Torna alla scheda del foglio e ricarica la pagina (F5).
+
+7. APRI LA DASHBOARD NUOVA
+   Menu: SICS - VVF Siena -> Apri Dashboard
+   Ora vedi il nuovo layout: toggle KIT | Calendario, lista a fisarmonica,
+   calendario colorato per sistema, promemoria.
+
+------------------------------------------------------------
+NOTE
+------------------------------------------------------------
+- Copia SOLO i due file Code.gs e sidebar.html. Il file appsscript.json
+  non va toccato.
+- La prima volta che apri la Dashboard aggiornata, Google potrebbe chiedere
+  di autorizzare lo script: accetta (e' lo stesso script di prima, aggiornato).
+- I promemoria sul calendario: la prima volta che ne crei uno, il database
+  crea da solo la sezione "promemoria". Nessuna configurazione extra.
+
+------------------------------------------------------------
+RINUMERAZIONE SERIALI CUSCINI (operazione separata, quando vuoi)
+------------------------------------------------------------
+Nella app (non nel foglio):
+  1. Apri la app e vai all'indirizzo:  /admin/rinumerazione
+  2. Clicca "Anteprima".
+  3. Controlla che i nuovi codici corrispondano all'appendice del file
+     numerazione.md.
+  4. Se tutto torna, clicca "Applica". (Salva il vecchio codice, e' ripetibile.)
