@@ -26,11 +26,11 @@ test("normalizza tutte le sorgenti in eventi unificati", () => {
     ],
   };
   expect(normalizzaEventi(sorgenti, fns)).toEqual([
-    { data: "2026-09-25", sistema: "cuscini", tipo: "scadenza", nome: "Kit 4 — 40/10", stato: "critico" },
-    { data: "2026-07-15", sistema: "taglio", tipo: "scadenza", nome: "Kit 1 — APS 120", stato: "attenzione" },
-    { data: "2026-06-12", sistema: "cuscini", tipo: "pianificata", nome: "Kit 4 — 40/10", stato: "pianificata" },
-    { data: "2026-06-09", sistema: "taglio", tipo: "manutenzione", nome: "APS 120 — Cambio olio", stato: "manutenzione" },
-    { data: "2026-06-20", sistema: "taglio", tipo: "promemoria", nome: "Controllo cesoia", stato: "promemoria" },
+    { id: "kit-4", data: "2026-09-25", sistema: "cuscini", tipo: "scadenza", nome: "Kit 4 — 40/10", stato: "critico" },
+    { id: "gt-1", data: "2026-07-15", sistema: "taglio", tipo: "scadenza", nome: "Kit 1 — APS 120", stato: "attenzione" },
+    { id: "p1", data: "2026-06-12", sistema: "cuscini", tipo: "pianificata", nome: "Kit 4 — 40/10", stato: "pianificata" },
+    { id: "m1", data: "2026-06-09", sistema: "taglio", tipo: "manutenzione", nome: "APS 120 — Cambio olio", stato: "manutenzione" },
+    { id: "r1", data: "2026-06-20", sistema: "taglio", tipo: "promemoria", nome: "Controllo cesoia", stato: "promemoria" },
   ]);
 });
 
