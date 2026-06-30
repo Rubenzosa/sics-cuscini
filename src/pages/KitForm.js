@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { saveKit, getAllKits } from "../firebase/service";
-import { PROSSIMI_SERIALI, buildMatricolaLucca } from "../data/kitData";
+import { suggerisciMatricola } from "../numerazione";
 
 const DISLOCAZIONI = ["Sede Centrale","Magazzino","Montepulciano","Montalcino","Poggibonsi","Piancastagnaio"];
 const TIPI_COMP = [
@@ -14,28 +14,7 @@ const TIPI_COMP = [
 ];
 
 function calcolaMatricolaLucca(tipo, bar, tuttiKits) {
-  let codice;
-  if (tipo.startsWith("CUSCINO")) codice = "CS";
-  else if (tipo.startsWith("TUBO")) codice = "TB";
-  else if (tipo === "CENTRALINA") codice = "CN";
-  else if (tipo === "RIDUTTORE") codice = "RP";
-  else if (tipo === "RUB. VALVOLARE") codice = "RV";
-  else return "";
-  const key = `${codice}_${bar}`;
-  const base = PROSSIMI_SERIALI[key] || 1;
-  let maxUsato = base - 1;
-  tuttiKits.forEach(kit => {
-    (kit.componenti || []).forEach(c => {
-      if (c.matricolaLucca) {
-        const parts = c.matricolaLucca.split(" ");
-        if (parts[0] === codice && parseInt(parts[1]) === bar) {
-          const ser = parseInt(parts[3]);
-          if (!isNaN(ser) && ser > maxUsato) maxUsato = ser;
-        }
-      }
-    });
-  });
-  return buildMatricolaLucca(tipo, bar, maxUsato + 1);
+  return suggerisciMatricola(tuttiKits, tipo, Number(bar));
 }
 
 function emptyComp(kitBar, tuttiKits) {
@@ -79,7 +58,7 @@ function ModalComponente({ comp, onSave, onClose, tuttiKits, kitBar, editIndex }
         <div className="section-blue" style={{ marginBottom: 16 }}>
           <div className="section-label blue">Matricola Lucca — assegnazione automatica</div>
           <div style={{ fontSize: 12, color: "var(--blue-text)" }}>
-            Prossimi disponibili: CS8·{PROSSIMI_SERIALI.CS_8} CS10·{PROSSIMI_SERIALI.CS_10} CS12·{PROSSIMI_SERIALI.CS_12} CN8·{PROSSIMI_SERIALI.CN_8} RP8·{PROSSIMI_SERIALI.RP_8} TB8·{PROSSIMI_SERIALI.TB_8} RV8·{PROSSIMI_SERIALI.RV_8}
+            Indice suggerito = ultimo in uso nella categoria + 1. Modificabile a mano.
           </div>
         </div>
 
