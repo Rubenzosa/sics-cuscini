@@ -26,6 +26,7 @@ export default function KitView({ kits, gruppiTaglio, sistema }) {
     return campi.some(v => v && v.toLowerCase().includes(q)) || inComp;
   }).sort((a, b) => (giorniAllaScadenza(scadDi(a)) ?? 9999) - (giorniAllaScadenza(scadDi(b)) ?? 9999));
 
+  const fuoriUso = items.filter(it => it.stato === "fuori_uso");
   const scortaLabel = isTaglio ? "gruppo da taglio" : "cuscino";
 
   return (
@@ -77,6 +78,31 @@ export default function KitView({ kits, gruppiTaglio, sistema }) {
             onToggle={() => setOpenId(openId === it.id ? null : it.id)} />
         );
       })}
+
+      {/* Fuori uso — sezione a parte, comprimibile */}
+      {fuoriUso.length > 0 && (
+        <details style={{ marginTop: 24 }}>
+          <summary style={{ cursor: "pointer", listStyle: "none", padding: "10px 14px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", color: "var(--text2)", fontSize: 13, fontWeight: 700 }}>
+            Fuori uso — dismessi ({fuoriUso.length}) ▾
+          </summary>
+          <div style={{ marginTop: 8, display: "flex", flexDirection: "column", gap: 6 }}>
+            {fuoriUso.map(it => (
+              <Link key={it.id} to={isTaglio ? `/gruppi-taglio/${it.id}` : `/kit/${it.id}`}
+                style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", background: "var(--bg2)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", textDecoration: "none", color: "var(--text2)" }}>
+                <span style={{ fontSize: 18, fontWeight: 900, color: "var(--text3)", minWidth: 34 }}>{it.numero}</span>
+                <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                  <span style={{ display: "block", fontWeight: 700, fontSize: 13, overflowWrap: "anywhere" }}>{it.nome}</span>
+                  <span style={{ display: "block", fontSize: 11, color: "var(--text3)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.mezzo}</span>
+                </span>
+                <span className="pill fuori_uso">Fuori uso</span>
+              </Link>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--text3)", marginTop: 8, paddingLeft: 4 }}>
+            Apri un kit per eliminarlo definitivamente.
+          </div>
+        </details>
+      )}
     </div>
   );
 }

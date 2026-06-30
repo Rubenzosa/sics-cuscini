@@ -799,7 +799,8 @@ function renderKitView(){
     if(!q) return true;
     return (it.nome||"").toLowerCase().includes(q)||(it.mezzo||"").toLowerCase().includes(q)||String(it.numero).includes(q)||(it.dislocazione||"").toLowerCase().includes(q)||(it.componenti||[]).some(function(c){return (c.modello||"").toLowerCase().includes(q)||(c.matricola||"").toLowerCase().includes(q)||(c.matricolaLucca||"").toLowerCase().includes(q);});
   }).sort(function(a,b){ var ga=gg(scadOf(a)),gb=gg(scadOf(b)); return (ga===null?9999:ga)-(gb===null?9999:gb); });
-  if(!lista.length){ h+='<div class="empty">Nessun kit trovato</div>'; return h; }
+  var fuoriUso=items.filter(function(it){return it.stato==="fuori_uso";});
+  if(!lista.length){ h+='<div class="empty">Nessun kit trovato</div>'; }
 
   lista.forEach(function(it){
     var s=st(it), g2=gg(scadOf(it)), open=S.openId===it.id;
@@ -825,6 +826,13 @@ function renderKitView(){
     }
     h+='</div>';
   });
+  if(fuoriUso.length){
+    h+='<details style="margin-top:18px"><summary style="cursor:pointer;list-style:none;padding:10px 14px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--rs);color:var(--text2);font-size:13px;font-weight:700">Fuori uso — dismessi ('+fuoriUso.length+') &#9662;</summary><div style="margin-top:8px;display:flex;flex-direction:column;gap:6px">';
+    fuoriUso.forEach(function(it){
+      h+='<div class="acc" style="cursor:pointer" onclick="'+(isT?'apriGT':'apriKit')+'(\''+esc(it.id)+'\')"><div class="acc-h"><div class="acc-num" style="color:var(--text3);font-size:18px">'+esc(it.numero)+'</div><div class="acc-main"><div class="acc-name">'+esc(it.nome)+'</div><div class="acc-mezzo">'+esc(it.mezzo)+'</div></div><span class="pill fuori_uso">Fuori uso</span></div></div>';
+    });
+    h+='</div></details>';
+  }
   return h;
 }
 function toggleAcc(id){ S.openId=S.openId===id?null:id; render(); }
