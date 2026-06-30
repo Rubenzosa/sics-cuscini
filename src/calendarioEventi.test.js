@@ -37,3 +37,25 @@ test("normalizza tutte le sorgenti in eventi unificati", () => {
 test("sorgenti vuote o mancanti → lista vuota", () => {
   expect(normalizzaEventi({}, fns)).toEqual([]);
 });
+
+test("eventi duplicati (stesso sistema/tipo/data/nome) compaiono una sola volta", () => {
+  const sorgenti = {
+    gruppi: [
+      { id: "gt-1", numero: "1", nome: "APS 120", _scad: "2027-03-15", _stato: "regolare" },
+      { id: "gt-1-dup", numero: "1", nome: "APS 120", _scad: "2027-03-15", _stato: "regolare" },
+    ],
+  };
+  const out = normalizzaEventi(sorgenti, fns);
+  expect(out).toHaveLength(1);
+  expect(out[0].nome).toBe("Kit 1 — APS 120");
+});
+
+test("kit diversi con stessa data restano entrambi", () => {
+  const sorgenti = {
+    gruppi: [
+      { id: "gt-1", numero: "1", nome: "APS 120", _scad: "2027-03-15", _stato: "regolare" },
+      { id: "gt-2", numero: "2", nome: "APS VOLVO", _scad: "2027-03-15", _stato: "regolare" },
+    ],
+  };
+  expect(normalizzaEventi(sorgenti, fns)).toHaveLength(2);
+});

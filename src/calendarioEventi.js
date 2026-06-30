@@ -29,5 +29,15 @@ export function normalizzaEventi(sorgenti, fns) {
     if (!r.data) return;
     out.push({ id: r.id, data: iso(r.data), sistema: r.sistema === "taglio" ? "taglio" : "cuscini", tipo: "promemoria", nome: r.titolo || "Promemoria", stato: "promemoria" });
   });
-  return out;
+
+  // Dedup: eventi identici (stesso sistema/tipo/data/nome) appaiono una sola volta.
+  // Copre i documenti duplicati su Firestore (stesso kit, stessa scadenza, doc-id diversi).
+  // Il nome include "Kit <numero>", quindi kit diversi non vengono fusi.
+  const visti = new Set();
+  return out.filter(e => {
+    const k = e.sistema + "|" + e.tipo + "|" + e.data + "|" + e.nome;
+    if (visti.has(k)) return false;
+    visti.add(k);
+    return true;
+  });
 }

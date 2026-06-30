@@ -837,7 +837,9 @@ function calEventi(){
   S.gruppi.forEach(function(g){ var sc=proxGT(g); if(!sc) return; evs.push({id:g.id,data:String(sc).slice(0,10),sistema:"taglio",tipo:"scadenza",nome:"Kit "+g.numero+" — "+g.nome,stato:statoGT(g)}); });
   (S.manutAll||[]).forEach(function(m){ if(!m.data) return; evs.push({id:m.id,data:String(m.data).slice(0,10),sistema:"taglio",tipo:"manutenzione",nome:(m.gtNome||"Gruppo")+(m.tipo?" — "+m.tipo:""),stato:"manutenzione"}); });
   (S.promemoria||[]).forEach(function(p){ if(!p.data) return; evs.push({id:p.id,data:String(p.data).slice(0,10),sistema:p.sistema==="taglio"?"taglio":"cuscini",tipo:"promemoria",nome:p.titolo||"Promemoria",stato:"promemoria"}); });
-  return evs;
+  // dedup eventi identici (stesso sistema/tipo/data/nome) — copre doc duplicati su Firestore
+  var visti={};
+  return evs.filter(function(e){ var k=e.sistema+"|"+e.tipo+"|"+e.data+"|"+e.nome; if(visti[k]) return false; visti[k]=1; return true; });
 }
 function renderCalendario(){
   var evs=calEventi();
