@@ -220,10 +220,10 @@ a.btn { text-decoration: none; }
 .acc.s-scaduto,.acc.s-critico{border-left-color:var(--red);}
 .acc-h{display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;}
 .acc-num{font-size:24px;font-weight:900;color:var(--acc);min-width:38px;line-height:1;}
-.acc-main{flex:1;min-width:0;}
-.acc-name{font-weight:700;font-size:13px;}
-.acc-mezzo{font-size:11px;color:var(--text3);font-family:monospace;}
-.acc-info{font-size:10px;color:var(--text2);}
+.acc-main{flex:1;min-width:0;overflow:hidden;}
+.acc-name{font-weight:700;font-size:13px;overflow-wrap:anywhere;word-break:break-word;}
+.acc-mezzo{font-size:11px;color:var(--text3);font-family:monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.acc-info{font-size:10px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .acc-cv{width:8px;height:8px;border-right:2px solid var(--text3);border-bottom:2px solid var(--text3);transform:rotate(45deg);flex-shrink:0;}
 .acc.open .acc-cv{transform:rotate(-135deg);}
 .acc-b{padding:0 12px 12px;}

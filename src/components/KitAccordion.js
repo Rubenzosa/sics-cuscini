@@ -25,10 +25,10 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
         textAlign: "left", color: "inherit", cursor: "pointer",
       }}>
         <span style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", lineHeight: 1, minWidth: 44 }}>{item.numero}</span>
-        <span style={{ flex: 1, minWidth: 0 }}>
-          <span style={{ display: "block", fontWeight: 700, fontSize: 15 }}>{item.nome}</span>
-          <span style={{ display: "block", fontSize: 12, color: "var(--text3)", fontFamily: "monospace" }}>{item.mezzo}</span>
-          <span style={{ display: "block", fontSize: 11, color: "var(--text2)" }}>{info}</span>
+        <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+          <span style={{ display: "block", fontWeight: 700, fontSize: 15, overflowWrap: "anywhere", wordBreak: "break-word" }}>{item.nome}</span>
+          <span style={{ display: "block", fontSize: 12, color: "var(--text3)", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.mezzo}</span>
+          <span style={{ display: "block", fontSize: 11, color: "var(--text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{info}</span>
         </span>
         <Ring giorni={giorni} stato={stato} />
         <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
