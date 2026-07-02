@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Ring from "./Ring";
-import { statoLabel, formatData } from "../utils";
+import { statoLabel, formatData, componentiFuoriUso } from "../utils";
 
 const BORDER = {
   scaduto: "var(--red)", critico: "var(--red)", attenzione: "var(--amber)",
@@ -16,6 +16,7 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
     ? `${item.sistema || ""}${item.marca ? " · " + item.marca : ""} · ${item.dislocazione || ""}`
     : `${item.bar} bar · ${item.dislocazione || ""}`;
   const comps = item.componenti || [];
+  const nFU = componentiFuoriUso(item);
 
   return (
     <div className="card" style={{ padding: 0, marginBottom: 12, borderLeft: `4px solid ${borderColor}`, overflow: "hidden" }}>
@@ -31,6 +32,12 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
           <span style={{ display: "block", fontSize: 11, color: "var(--text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{info}</span>
         </span>
         <Ring giorni={giorni} stato={stato} />
+        {nFU > 0 && (
+          <span title={`${nFU} componente/i fuori uso da sostituire`} style={{
+            fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 12,
+            background: "var(--amber-bg)", color: "var(--amber-text)", whiteSpace: "nowrap", flexShrink: 0,
+          }}>−{nFU} comp.</span>
+        )}
         <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
         <span style={{
           width: 9, height: 9, borderRight: "2px solid var(--text3)", borderBottom: "2px solid var(--text3)",
