@@ -67,14 +67,15 @@ export function percentualeVita(dataAcquisto, dataRevisione) {
 }
 
 export function calcolaProssimaRevisione(annoAcquisto, dataUltimaRevisione) {
-  const anni = new Date().getFullYear() - annoAcquisto;
+  if (!dataUltimaRevisione) return null;
+  const base = new Date(dataUltimaRevisione);
+  if (isNaN(base)) return null;
+  // Età dei cuscini valutata all'anno della revisione effettuata.
+  // < 10 anni → revisione ogni 2 anni; >= 10 anni → ogni anno.
+  const anni = base.getFullYear() - annoAcquisto;
   const intervalloAnni = anni >= 10 ? 1 : 2;
-  if (dataUltimaRevisione) {
-    const base = new Date(dataUltimaRevisione);
-    base.setFullYear(base.getFullYear() + intervalloAnni);
-    return base.toISOString().split("T")[0];
-  }
-  return null;
+  base.setFullYear(base.getFullYear() + intervalloAnni);
+  return base.toISOString().split("T")[0];
 }
 
 // Ricerca globale su tutti i kit e componenti

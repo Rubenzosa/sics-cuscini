@@ -4,6 +4,7 @@ import {
   updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { calcolaProssimaRevisione } from "../utils";
 
 const KITS = "kits";
 const STORICO_SOST = "storico_sostituzioni";
@@ -71,9 +72,14 @@ export async function aggiungiRevisione(kitId, revisione) {
     dataRegistrazione: new Date().toISOString(),
     timestamp: serverTimestamp(),
   });
-  // Aggiorna data revisione nel kit
+  // dataRevisione sul kit = prossima scadenza calcolata dalla data effettuata.
+  // < 10 anni → +2 anni; >= 10 anni → +1 anno.
+  const prossimaScadenza =
+    calcolaProssimaRevisione(kit.annoAcquisto, revisione.dataRevisione) ||
+    revisione.dataRevisione;
   await updateDoc(doc(db, KITS, kitId), {
-    dataRevisione: revisione.dataRevisione,
+    dataRevisione: prossimaScadenza,
+    ultimaRevisioneData: revisione.dataRevisione,
     ultimaRevisioneEsito: revisione.esito,
     ultimaRevisioneTecnico: revisione.tecnico,
   });
