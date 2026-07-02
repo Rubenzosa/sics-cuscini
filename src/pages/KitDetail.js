@@ -155,7 +155,7 @@ export default function KitDetail({ kits, reload }) {
   const [destComp, setDestComp] = useState("fuori_uso");
   const [noteUscita, setNoteUscita] = useState("");
 
-  const [formRev, setFormRev] = useState({ dataRevisione: new Date().toISOString().split("T")[0], tecnico:"", ente:"", esito:"positivo", note:"" });
+  const [formRev, setFormRev] = useState({ dataRevisione: new Date().toISOString().split("T")[0], tecnico:"", ente:"", esito:"positivo", note:"", intervalloAnni: kit?.intervalloRevisioneAnni ?? "" });
   const [formSpost, setFormSpost] = useState({ nuovoMezzo:"", nuovaTarga:"", nuovaDislocazione:"Sede Centrale", motivo:"" });
 
   useEffect(() => {
@@ -510,6 +510,10 @@ export default function KitDetail({ kits, reload }) {
               </div>
               <div className="form-group"><label>Tecnico responsabile</label><input value={formRev.tecnico} onChange={e => setFormRev(p => ({...p, tecnico:e.target.value}))} placeholder="Nome cognome"/></div>
               <div className="form-group"><label>Ente certificatore</label><input value={formRev.ente} onChange={e => setFormRev(p => ({...p, ente:e.target.value}))} placeholder="es. VVF, ente esterno..."/></div>
+              <div className="form-group" style={{ gridColumn:"1/-1" }}>
+                <label>Durata scadenza (anni) — opzionale</label>
+                <input type="number" min="1" step="1" value={formRev.intervalloAnni} onChange={e => setFormRev(p => ({...p, intervalloAnni:e.target.value}))} placeholder="Vuoto = automatico da età cuscini (<10 anni → 2, ≥10 → 1)"/>
+              </div>
               <div className="form-group" style={{ gridColumn:"1/-1" }}><label>Note / osservazioni</label><textarea value={formRev.note} onChange={e => setFormRev(p => ({...p, note:e.target.value}))} placeholder="Annotazioni, prescrizioni, condizioni..." rows={3} style={{ resize:"vertical" }}/></div>
             </div>
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 }}>

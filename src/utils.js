@@ -78,6 +78,18 @@ export function calcolaProssimaRevisione(annoAcquisto, dataUltimaRevisione) {
   return base.toISOString().split("T")[0];
 }
 
+// Scadenza da intervallo esplicito in anni (durata manuale cuscini / anni taglio).
+// Ritorna null se intervallo non valido (<=0 o non numerico) o data mancante.
+export function scadenzaConIntervallo(dataStr, anni) {
+  if (!dataStr) return null;
+  const base = new Date(dataStr);
+  if (isNaN(base)) return null;
+  const n = Number(anni);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  base.setFullYear(base.getFullYear() + n);
+  return base.toISOString().split("T")[0];
+}
+
 // Ricerca globale su tutti i kit e componenti
 export function cercaGlobale(kits, query) {
   if (!query || query.trim().length < 2) return [];
