@@ -130,6 +130,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
                   ["Sistema",           badge.label],
                   ["Marca principale",  gt.marca||"—"],
                   ["Anno acquisto",     gt.annoAcquisto||"—"],
+                  ["Revisione ogni",    gt.intervalloRevisioneAnni?`${gt.intervalloRevisioneAnni} anni`:"—"],
                   ["Dislocazione",      gt.dislocazione||"—"],
                   ["Prox. revisione",   proxRev&&proxRev!=="NO REVISIONE"?formatData(proxRev):proxRev||"N/D"],
                   ["Scade tra",         giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],
