@@ -3,9 +3,9 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   deleteKit, sostituisciComponente, getStoricoSostituzioni,
   aggiungiRevisione, getRevisioni, spostaKit, getStoricoSpostamenti,
-  uploadAllegato, getAllegatiKit, deleteAllegato,
+  uploadAllegato, getAllegatiKit, deleteAllegato, mettiComponenteFuoriUso,
 } from "../firebase/service";
-import { calcolaStato, statoLabel, formatData, giorniAllaScadenza } from "../utils";
+import { calcolaStato, statoLabel, formatData, giorniAllaScadenza, componentiFuoriUso } from "../utils";
 import Documenti from "../components/Documenti";
 import { PROSSIMI_SERIALI, buildMatricolaLucca } from "../data/kitData";
 
@@ -145,6 +145,8 @@ export default function KitDetail({ kits, reload }) {
   const [modalSost, setModalSost] = useState(null);
   const [modalRev, setModalRev] = useState(false);
   const [modalSpost, setModalSpost] = useState(false);
+  const [modalFuoriUso, setModalFuoriUso] = useState(null); // index componente o null
+  const [noteFU, setNoteFU] = useState("");
   const [saving, setSaving] = useState(false);
 
   const [storicoSost, setStoricoSost] = useState([]);
@@ -212,6 +214,13 @@ export default function KitDetail({ kits, reload }) {
     setSaving(false);
   }
 
+  async function handleFuoriUso() {
+    setSaving(true);
+    try { await mettiComponenteFuoriUso(kit.id, modalFuoriUso, noteFU); await reload(); setModalFuoriUso(null); setNoteFU(""); }
+    catch (e) { alert("Errore: " + e.message); }
+    setSaving(false);
+  }
+
   async function handleSpostamento() {
     if (!formSpost.nuovaTarga) { alert("Inserisci la targa del nuovo mezzo."); return; }
     setSaving(true);
@@ -246,6 +255,7 @@ export default function KitDetail({ kits, reload }) {
 
       {stato === "scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>⚠ Scaduto da {Math.abs(giorni)} giorni — revisione urgente</div>}
       {stato === "critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>⏱ Scade tra {giorni} giorni — pianifica revisione</div>}
+      {componentiFuoriUso(kit) > 0 && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>Kit non completo — {componentiFuoriUso(kit)} componente/i fuori uso da sostituire. Revisione valida sul resto del kit.</div>}
 
       {/* TAB NAV */}
       <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
@@ -310,15 +320,17 @@ export default function KitDetail({ kits, reload }) {
                   {items.map(c => {
                     const ri = (kit.componenti||[]).indexOf(c);
                     return (
-                      <div key={ri} className="comp-item" style={{ flexDirection:"column", alignItems:"stretch", gap:8 }}>
+                      <div key={ri} className="comp-item" style={{ flexDirection:"column", alignItems:"stretch", gap:8, opacity: c.fuoriUso ? 0.65 : 1, borderLeft: c.fuoriUso ? "3px solid var(--amber)" : undefined }}>
                         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
                           <div style={{ flex:1 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                              <span className="comp-tipo">{c.tipo}</span>
+                              <span className="comp-tipo" style={c.fuoriUso ? { textDecoration:"line-through", color:"var(--text3)" } : undefined}>{c.tipo}</span>
+                              {c.fuoriUso && <span style={{ fontSize:10, background:"var(--amber-bg)", color:"var(--amber-text)", padding:"2px 7px", borderRadius:10, fontWeight:700 }}>FUORI USO — da sostituire</span>}
                               {c.note && <span style={{ fontSize:10, background:"var(--red-bg)", color:"var(--red-text)", padding:"2px 7px", borderRadius:10, fontWeight:700 }}>{c.note}</span>}
                             </div>
                             <div className="comp-modello">{c.modello||"—"}</div>
                             {c.dataInizioServizio && <div style={{ fontSize:10, color:"var(--text3)", marginTop:2 }}>In servizio: {formatData(c.dataInizioServizio)}</div>}
+                            {c.fuoriUso && <div style={{ fontSize:10, color:"var(--amber-text)", marginTop:2 }}>Fuori uso dal {formatData(c.dataFuoriUso)}{c.noteFuoriUso ? ` — ${c.noteFuoriUso}` : ""}</div>}
                           </div>
                           <div style={{ textAlign:"right", minWidth:150 }}>
                             {c.matricolaLucca && <div style={{ fontFamily:"monospace", fontWeight:800, fontSize:12, color:"var(--blue-text)", background:"var(--blue-bg)", padding:"3px 10px", borderRadius:6, display:"inline-block", marginBottom:4 }}>{c.matricolaLucca}</div>}
@@ -327,9 +339,14 @@ export default function KitDetail({ kits, reload }) {
                             <div style={{ fontSize:10, color:"var(--text3)" }}>{c.bar} bar</div>
                           </div>
                         </div>
-                        <div style={{ display:"flex", justifyContent:"flex-end" }}>
-                          <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--amber-text)", borderColor:"#fac775", background:"var(--amber-bg)" }} onClick={() => apriSostituisci(ri)}>
-                            ⇄ Sostituisci
+                        <div style={{ display:"flex", justifyContent:"flex-end", gap:8 }}>
+                          {!c.fuoriUso && (
+                            <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--text3)", borderColor:"var(--border2)", background:"var(--bg2)" }} onClick={() => { setModalFuoriUso(ri); setNoteFU(""); }}>
+                              Metti fuori uso
+                            </button>
+                          )}
+                          <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--amber-text)", borderColor:"#fac775", background:"var(--amber-bg)", fontWeight: c.fuoriUso ? 700 : undefined }} onClick={() => apriSostituisci(ri)}>
+                            ⇄ Sostituisci{c.fuoriUso ? " ora" : ""}
                           </button>
                         </div>
                       </div>
@@ -525,6 +542,29 @@ export default function KitDetail({ kits, reload }) {
       )}
 
       {/* MODAL: SPOSTAMENTO KIT */}
+      {modalFuoriUso !== null && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth:460 }}>
+            <div className="modal-header">
+              <span className="modal-title">Metti fuori uso — {kit.componenti?.[modalFuoriUso]?.tipo}</span>
+              <button className="modal-close" onClick={() => setModalFuoriUso(null)}>✕</button>
+            </div>
+            <p style={{ fontSize:13, color:"var(--text2)", marginBottom:14 }}>
+              Il componente resta nel kit marcato <strong>fuori uso</strong>, in attesa di sostituzione.
+              Il resto del kit resta revisionato e funzionante.
+            </p>
+            <div className="form-group">
+              <label>Motivo / note (opzionale)</label>
+              <textarea value={noteFU} onChange={e => setNoteFU(e.target.value)} placeholder="es. Lacerazione, perdita di pressione..." rows={3} style={{ resize:"vertical" }}/>
+            </div>
+            <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 }}>
+              <button className="btn btn-secondary" onClick={() => setModalFuoriUso(null)}>Annulla</button>
+              <button className="btn btn-danger" onClick={handleFuoriUso} disabled={saving}>{saving?"Salvataggio...":"Conferma fuori uso"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {modalSpost && (
         <div className="modal-overlay">
           <div className="modal">

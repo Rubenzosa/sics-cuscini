@@ -54,6 +54,25 @@ export async function sostituisciComponente(kitId, indexComp, nuovoComp, destina
   componenti[indexComp] = { ...nuovoComp, dataInserimento: new Date().toISOString() };
   await updateDoc(doc(db, KITS, kitId), { componenti });
 }
+// Mette un componente fuori uso (difettoso in revisione) senza sostituirlo subito.
+// Il componente resta nel kit ma marcato; la sostituzione avverrà dopo.
+export async function mettiComponenteFuoriUso(kitId, indexComp, note) {
+  const kitSnap = await getDoc(doc(db, KITS, kitId));
+  if (!kitSnap.exists()) throw new Error("Kit non trovato");
+  const kit = kitSnap.data();
+  const componenti = [...(kit.componenti || [])];
+  const c = { ...componenti[indexComp] };
+  componenti[indexComp] = { ...c, fuoriUso: true, dataFuoriUso: new Date().toISOString(), noteFuoriUso: note || "" };
+  await addDoc(collection(db, STORICO_SOST), {
+    kitId, kitNumero: kit.numero, kitNome: kit.nome,
+    dataOperazione: new Date().toISOString(),
+    operazione: "messa_fuori_uso",
+    componenteUscente: { ...c, destinazione: "fuori_uso", noteUscita: note || "", dataUscita: new Date().toISOString() },
+    componenteEntrante: null,
+    timestamp: serverTimestamp(),
+  });
+  await updateDoc(doc(db, KITS, kitId), { componenti });
+}
 export async function getStoricoSostituzioni(kitId) {
   const snap = await getDocs(collection(db, STORICO_SOST));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))

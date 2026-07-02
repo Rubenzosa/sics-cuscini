@@ -78,6 +78,12 @@ export function calcolaProssimaRevisione(annoAcquisto, dataUltimaRevisione) {
   return base.toISOString().split("T")[0];
 }
 
+// Numero di componenti messi fuori uso (difettosi, in attesa di sostituzione).
+// Un kit con >0 è revisionato/funzionante ma incompleto → merita attenzione.
+export function componentiFuoriUso(kit) {
+  return (kit?.componenti || []).filter(c => c.fuoriUso).length;
+}
+
 // Scadenza da intervallo esplicito in anni (durata manuale cuscini / anni taglio).
 // Ritorna null se intervallo non valido (<=0 o non numerico) o data mancante.
 export function scadenzaConIntervallo(dataStr, anni) {
