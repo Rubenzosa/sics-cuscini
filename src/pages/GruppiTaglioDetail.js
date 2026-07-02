@@ -19,7 +19,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const [modalMan, setModalMan]   = useState(false);
   const [saving, setSaving]       = useState(false);
 
-  const [formRev, setFormRev] = useState({ dataRevisione: new Date().toISOString().split("T")[0], esito:"positivo", tecnico:"", ente:"", note:"" });
+  const [formRev, setFormRev] = useState({ dataRevisione: new Date().toISOString().split("T")[0], esito:"positivo", tecnico:"", ente:"", note:"", intervalloAnni: gt?.intervalloRevisioneAnni ?? "" });
   const [formMan, setFormMan] = useState({ data: new Date().toISOString().split("T")[0], tipo:"Cambio olio", olio:"", candela:"", note:"", componenteInteressato:"" });
 
   useEffect(() => {
@@ -48,6 +48,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
 
   async function salvaRevisione() {
     if (!formRev.dataRevisione) { alert("Inserisci la data"); return; }
+    if (!(Number(formRev.intervalloAnni) > 0)) { alert("Inserisci ogni quanti anni serve la revisione."); return; }
     setSaving(true);
     try { await aggiungiRevisioneGT(gt.id, formRev); await reload(); setModalRev(false); getRevisioniGT(gt.id).then(setRevisioni); }
     catch(e) { alert("Errore: "+e.message); }
@@ -323,6 +324,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
               </div>
               <div className="form-group"><label>Tecnico</label><input value={formRev.tecnico} onChange={e => setFormRev(p=>({...p,tecnico:e.target.value}))} placeholder="Nome cognome"/></div>
               <div className="form-group"><label>Ente</label><input value={formRev.ente} onChange={e => setFormRev(p=>({...p,ente:e.target.value}))} placeholder="es. VVF Siena"/></div>
+              <div className="form-group"><label>Revisione ogni (anni)</label><input type="number" min="1" step="1" value={formRev.intervalloAnni} onChange={e => setFormRev(p=>({...p,intervalloAnni:e.target.value}))} placeholder="es. 3"/></div>
               <div className="form-group" style={{ gridColumn:"1/-1" }}><label>Note</label><textarea value={formRev.note} onChange={e => setFormRev(p=>({...p,note:e.target.value}))} rows={3}/></div>
             </div>
             <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:20 }}>

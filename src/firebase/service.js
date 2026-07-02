@@ -4,7 +4,7 @@ import {
   updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { calcolaProssimaRevisione } from "../utils";
+import { calcolaProssimaRevisione, scadenzaConIntervallo } from "../utils";
 
 const KITS = "kits";
 const STORICO_SOST = "storico_sostituzioni";
@@ -72,17 +72,23 @@ export async function aggiungiRevisione(kitId, revisione) {
     dataRegistrazione: new Date().toISOString(),
     timestamp: serverTimestamp(),
   });
-  // dataRevisione sul kit = prossima scadenza calcolata dalla data effettuata.
-  // < 10 anni → +2 anni; >= 10 anni → +1 anno.
+  // dataRevisione sul kit = prossima scadenza dalla data effettuata.
+  // Priorità: durata manuale (anni) se inserita, altrimenti logica per età
+  // (< 10 anni → +2 anni; >= 10 anni → +1 anno).
   const prossimaScadenza =
+    scadenzaConIntervallo(revisione.dataRevisione, revisione.intervalloAnni) ||
     calcolaProssimaRevisione(kit.annoAcquisto, revisione.dataRevisione) ||
     revisione.dataRevisione;
-  await updateDoc(doc(db, KITS, kitId), {
+  const patch = {
     dataRevisione: prossimaScadenza,
     ultimaRevisioneData: revisione.dataRevisione,
     ultimaRevisioneEsito: revisione.esito,
     ultimaRevisioneTecnico: revisione.tecnico,
-  });
+  };
+  // Memorizza l'intervallo manuale per precompilare la prossima registrazione.
+  const nAnni = Number(revisione.intervalloAnni);
+  if (Number.isFinite(nAnni) && nAnni > 0) patch.intervalloRevisioneAnni = nAnni;
+  await updateDoc(doc(db, KITS, kitId), patch);
   return recId;
 }
 export async function getRevisioni(kitId) {
@@ -252,11 +258,24 @@ export async function aggiungiRevisioneGT(gtId, revisione) {
     dataRegistrazione: new Date().toISOString(),
     timestamp: serverTimestamp(),
   });
-  await updateDoc(doc(db, GT, gtId), {
+  // Taglio: l'utente indica ogni quanti anni serve la revisione.
+  // Aggiorna la scadenza di tutti i componenti tranne quelli "NO REVISIONE".
+  const nuovaProssima = scadenzaConIntervallo(revisione.dataRevisione, revisione.intervalloAnni);
+  const patch = {
     ultimaRevisioneData: revisione.dataRevisione,
     ultimaRevisioneEsito: revisione.esito,
     ultimaRevisioneTecnico: revisione.tecnico,
-  });
+  };
+  const nAnni = Number(revisione.intervalloAnni);
+  if (nuovaProssima) {
+    patch.intervalloRevisioneAnni = nAnni;
+    patch.componenti = (gt.componenti || []).map(c =>
+      c.prossimaRevisione === "NO REVISIONE"
+        ? c
+        : { ...c, ultimaRevisione: revisione.dataRevisione, prossimaRevisione: nuovaProssima }
+    );
+  }
+  await updateDoc(doc(db, GT, gtId), patch);
 }
 
 export async function getRevisioniGT(gtId) {
