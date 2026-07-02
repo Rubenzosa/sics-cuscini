@@ -76,7 +76,7 @@ export default function GruppiTaglioForm({ gruppi, reload }) {
   const [form, setForm] = useState({
     numero:"", nome:"", mezzo:"", tipoMezzo:"", dislocazione:"Sede Centrale",
     annoAcquisto: new Date().getFullYear(), sistema:"oleodinamico",
-    marca:"LUKAS", stato:"attivo", componenti:[],
+    marca:"LUKAS", stato:"attivo", intervalloRevisioneAnni:"", componenti:[],
   });
   const [saving, setSaving]       = useState(false);
   const [modalComp, setModalComp] = useState(null);
@@ -106,7 +106,8 @@ export default function GruppiTaglioForm({ gruppi, reload }) {
     e.preventDefault();
     setSaving(true);
     const gtId = existing ? existing.id : `gt-${String(form.nome).toLowerCase().replace(/\s+/g,"-")}-${Date.now()}`;
-    await saveGruppoTaglio({ id:gtId, ...form, annoAcquisto:Number(form.annoAcquisto) });
+    const intervallo = form.intervalloRevisioneAnni === "" || form.intervalloRevisioneAnni == null ? "" : Number(form.intervalloRevisioneAnni);
+    await saveGruppoTaglio({ id:gtId, ...form, annoAcquisto:Number(form.annoAcquisto), intervalloRevisioneAnni:intervallo });
     await reload();
     navigate(`/gruppi-taglio/${gtId}`);
   }
@@ -138,6 +139,7 @@ export default function GruppiTaglioForm({ gruppi, reload }) {
               </select>
             </div>
             <div className="form-group"><label>Anno acquisto</label><input name="annoAcquisto" type="number" value={form.annoAcquisto} onChange={handleChange}/></div>
+            <div className="form-group"><label>Revisione ogni (anni)</label><input name="intervalloRevisioneAnni" type="number" min="1" step="1" value={form.intervalloRevisioneAnni} onChange={handleChange} placeholder="es. 3"/></div>
             <div className="form-group"><label>Dislocazione</label>
               <select name="dislocazione" value={form.dislocazione} onChange={handleChange}>
                 {DISLOCAZIONI.map(d=><option key={d} value={d}>{d}</option>)}
