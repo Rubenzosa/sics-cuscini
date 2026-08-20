@@ -355,3 +355,20 @@ export function sistemaBadge(sistema) {
   if (sistema === "oleodinamico") return { label: "Oleodinamico",  bg: "#eaf3de", color: "#3b6d11" };
   return                                 { label: "Misto",          bg: "#faeeda", color: "#854f0b" };
 }
+
+// Data locale in formato ISO (YYYY-MM-DD).
+// NON usare toISOString() su una data costruita con componenti locali:
+// in Italia (UTC+1/+2) la mezzanotte locale in UTC è il giorno precedente,
+// e la chiave risultante sposta gli eventi di un giorno.
+export function isoLocale(d) {
+  if (!d) return "";
+  const x = d instanceof Date ? d : new Date(d);
+  if (isNaN(x)) return "";
+  const p = n => String(n).padStart(2, "0");
+  return `${x.getFullYear()}-${p(x.getMonth() + 1)}-${p(x.getDate())}`;
+}
+
+// Oggi in formato ISO, secondo il fuso locale.
+export function oggiIso() {
+  return isoLocale(new Date());
+}

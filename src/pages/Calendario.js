@@ -6,7 +6,7 @@ import {
   aggiornaRevisionePianificata,
   getAllPromemoria, salvaPromemoria, deletePromemoria, getAllManutenzioniGT,
 } from "../firebase/service";
-import { calcolaStato, calcolaStatoGT, prossimaRevisioneGT, giorniAllaScadenza } from "../utils";
+import { calcolaStato, calcolaStatoGT, prossimaRevisioneGT, giorniAllaScadenza, isoLocale, oggiIso } from "../utils";
 import { normalizzaEventi } from "../calendarioEventi";
 
 const MESI = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno",
@@ -15,15 +15,20 @@ const GIORNI = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
 const OFFICINE = ["VVF Siena","VVF Firenze","VVF Arezzo","Centro revisione esterno","Altro"];
 const COLORE_SISTEMA = { cuscini: "#5c6bc0", taglio: "#f9a825" };
 
-function isoToDate(s) { return s ? new Date(s) : null; }
-function dateToIso(d) { return d ? d.toISOString().split("T")[0] : ""; }
+function isoToDate(s) {
+  if (!s) return null;
+  const m = /^(d{4})-(d{2})-(d{2})/.exec(String(s));
+  return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date(s);
+}
+// Chiave giorno sempre in fuso locale: toISOString() sposterebbe gli eventi di un giorno.
+function dateToIso(d) { return isoLocale(d); }
 function sameDay(a, b) {
   return a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
 }
 
 // ── MODAL PIANIFICA ─────────────────────────────────────────
 function ModalPianifica({ kits, gruppiTaglio, dataIniziale, onSave, onClose, editing }) {
-  const oggi = new Date().toISOString().split("T")[0];
+  const oggi = oggiIso();
   const [form, setForm] = useState(editing || {
     dataPrevista: dataIniziale || oggi,
     officina: "VVF Siena",

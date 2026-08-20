@@ -3,7 +3,7 @@ import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import KitAccordion from "../components/KitAccordion";
 import { contaStats, scortaMancante } from "../inventario";
-import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT, statoLabel, formatData } from "../utils";
+import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT, statoLabel, formatData, oggiIso } from "../utils";
 import { deleteKit, deleteGruppoTaglio, updateKit, updateGruppoTaglio } from "../firebase/service";
 import { buildCsv, buildHtmlReport } from "../export";
 
@@ -56,7 +56,7 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `SICS_${isTaglio ? "taglio" : "cuscini"}_${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `SICS_${isTaglio ? "taglio" : "cuscini"}_${oggiIso()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   }

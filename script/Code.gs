@@ -198,6 +198,140 @@ function coloreStato(stato) {
   return "#ffffff";
 }
 
+// ── UTILITY FORMATTAZIONE FOGLI ──────────────────────────────
+
+// Svuota contenuti E formati (clearContents lasciava colori/merge vecchi)
+function resetFoglio(sh) {
+  var mr = sh.getMaxRows(), mc = sh.getMaxColumns();
+  var rng = sh.getRange(1, 1, mr, mc);
+  rng.breakApart();
+  rng.clear();
+  sh.getBandings().forEach(function(b) { b.remove(); });
+}
+
+// Larghezza colonne = contenuto + padding, con min/max; testo a capo e riga alta quanto serve
+// righeTitolo: numeri di riga delle intestazioni di gruppo (celle unite).
+// Vanno escluse dal calcolo larghezza, altrimenti autoResize le misura come
+// se il testo stesse tutto nella prima colonna e le colonne restano strette.
+function formattaFoglio(sh, nCols, righeTitolo, maxW) {
+  maxW = maxW || 320;
+  var last = Math.max(sh.getLastRow(), 1);
+  sh.showColumns(1, nCols);   // annulla eventuali colonne nascoste da versioni precedenti
+  sh.getRange(1, 1, last, nCols)
+    .setWrapStrategy(SpreadsheetApp.WrapStrategy.WRAP)
+    .setVerticalAlignment("middle");
+  sh.getRange(1, 1, 1, nCols).setHorizontalAlignment("center");
+  sh.autoResizeColumns(1, nCols);
+
+  var salta = {};
+  (righeTitolo || []).forEach(function(r) { salta[r] = true; });
+  var valori = sh.getRange(1, 1, last, nCols).getDisplayValues();
+
+  for (var c = 0; c < nCols; c++) {
+    var caratteri = 0;
+    for (var r = 0; r < valori.length; r++) {
+      if (salta[r + 1]) continue;
+      var t = String(valori[r][c] == null ? "" : valori[r][c]);
+      if (t.length > caratteri) caratteri = t.length;
+    }
+    var stimata = caratteri * 7.4 + 26;                       // ~7.4px per carattere a 10pt
+    var w = Math.max(sh.getColumnWidth(c + 1) + 28, stimata);
+    sh.setColumnWidth(c + 1, Math.max(90, Math.min(maxW, Math.round(w))));
+  }
+  sh.autoResizeRows(1, last);
+  sh.setFrozenRows(1);
+}
+
+// Ordina kit/gruppi per numero (numerico quando possibile)
+function ordinaPerNumero(arr) {
+  return (arr || []).slice().sort(function(a, b) {
+    var na = parseInt(a.numero, 10), nb = parseInt(b.numero, 10);
+    if (isNaN(na) && isNaN(nb)) return String(a.numero||"").localeCompare(String(b.numero||""));
+    if (isNaN(na)) return 1;
+    if (isNaN(nb)) return -1;
+    return na - nb;
+  });
+}
+
+// Stato tecnico -> etichetta leggibile nel foglio
+var ETICHETTE_STATO = {
+  scaduto: "Scaduto", critico: "Critico", attenzione: "Attenzione",
+  buono: "Buono", regolare: "Regolare", in_revisione: "In revisione",
+  magazzino: "In magazzino", senza_data: "Senza data", fuori_servizio: "Fuori servizio"
+};
+function etichettaStato(st) {
+  if (!st) return "";
+  return ETICHETTE_STATO[st] || String(st).charAt(0).toUpperCase() + String(st).slice(1).replace(/_/g, " ");
+}
+
+// Conteggio componenti con evidenza di quelli fuori uso: "8 \u00b7 1 fuori uso"
+function contaComponenti(componenti, fuoriUsoFn) {
+  var lista = componenti || [];
+  if (!lista.length) return 0;
+  var ko = lista.filter(fuoriUsoFn).length;
+  return ko ? lista.length + " \u00b7 " + ko + " fuori uso" : lista.length;
+}
+function compCuscinoFuoriUso(c) { return !!c.fuoriUso; }
+function compTaglioFuoriUso(c) { return String(c.statoComp || "").toLowerCase().indexOf("fuori uso") >= 0; }
+
+// Formato numerico dei giorni a scadenza: unità sempre, negativi in rosso
+var FORMATO_GIORNI = '0" gg";[Red]-0" gg";0" gg";@';
+
+// Converte una data testuale in oggetto Date (per la formattazione dd/mm/yyyy);
+// lascia il testo originale se non è una data valida ("NO REVISIONE", vuoto, ...)
+function cellaData(v) {
+  if (!v) return "N/D";
+  if (v === "NO REVISIONE") return v;
+  var d = new Date(v);
+  return isNaN(d) ? v : d;
+}
+
+// Ordine delle dislocazioni: Sede Centrale in testa, sedi distaccate in mezzo,
+// magazzino e voci senza sede in coda
+function ordinaDislocazioni(nomi) {
+  function peso(d) {
+    var n = String(d || "").toLowerCase();
+    if (!n) return 3;
+    if (n.indexOf("sede centrale") >= 0) return 0;
+    if (n.indexOf("magazzino") >= 0)     return 2;
+    return 1;
+  }
+  return nomi.slice().sort(function(a, b) {
+    var pa = peso(a), pb = peso(b);
+    if (pa !== pb) return pa - pb;
+    return String(a).localeCompare(String(b));
+  });
+}
+
+// Raggruppa elementi per dislocazione, già ordinati per numero dentro ogni sede
+function raggruppaPerDislocazione(items) {
+  var mappa = {};
+  items.forEach(function(it) {
+    var d = it.dislocazione || "Senza dislocazione";
+    if (!mappa[d]) mappa[d] = [];
+    mappa[d].push(it);
+  });
+  return ordinaDislocazioni(Object.keys(mappa)).map(function(d) {
+    return { dislocazione: d, items: ordinaPerNumero(mappa[d]) };
+  });
+}
+
+// Da mappa { indice riga dati: 1 } ai numeri di riga del foglio (header incluso)
+function righeTitoloDa(mappa) {
+  return Object.keys(mappa || {}).map(function(k) { return Number(k) + 2; });
+}
+
+// Riga-titolo di gruppo: unisce le colonne e la colora
+function stileRigaGruppo(sh, riga, nCols, bg) {
+  sh.getRange(riga, 1, 1, nCols)
+    .merge()
+    .setBackground(bg)
+    .setFontColor("#ffffff")
+    .setFontWeight("bold")
+    .setHorizontalAlignment("left")
+    .setVerticalAlignment("middle");
+}
+
 // ── API CHIAMATE DALLA SIDEBAR ───────────────────────────────
 
 // CUSCINI
@@ -341,48 +475,77 @@ function sincronizzaCuscini() {
 
   // Foglio KIT CUSCINI
   var shKit = ss.getSheetByName("KIT Cuscini") || ss.insertSheet("KIT Cuscini");
-  shKit.clearContents();
-  var hKit = ["ID","N°","Nome","Mezzo","Targa","Bar","Anno","Data Revisione","Stato","Giorni","Dislocazione","Tecnico","Esito","Componenti"];
+  resetFoglio(shKit);
+  kits = ordinaPerNumero(kits);
+  var hKit = ["N°","Nome","Mezzo","Targa","Bar","Anno","Data Revisione","Stato","Giorni","Dislocazione","Tecnico","Esito","Componenti","ID"];
   shKit.getRange(1,1,1,hKit.length).setValues([hKit])
     .setBackground("#1a2b3c").setFontColor("#ffffff").setFontWeight("bold");
-  var rKit = kits.map(function(k) {
-    var s = statoCalcola(k, oggi);
-    var g = giorniA(k.dataRevisione);
-    return [k.id||"", k.numero||"", k.nome||"", k.tipoMezzo||"", k.mezzo||"",
-            k.bar||"", k.annoAcquisto||"", k.dataRevisione||"",
-            s, g!==null?g:"N/D", k.dislocazione||"",
-            k.ultimaRevisioneTecnico||"", k.ultimaRevisioneEsito||"",
-            (k.componenti||[]).length];
+  // Righe raggruppate per dislocazione
+  var rKit = [], titoliKit = [], statiKit = [];
+  raggruppaPerDislocazione(kits).forEach(function(gr) {
+    titoliKit.push(rKit.length);
+    rKit.push([gr.dislocazione.toUpperCase() + "   ·   " + gr.items.length + " kit",
+               "","","","","","","","","","","","",""]);
+    gr.items.forEach(function(k) {
+      var st = statoCalcola(k, oggi);
+      var g  = giorniA(k.dataRevisione);
+      rKit.push([k.numero||"", k.nome||"", k.tipoMezzo||"", k.mezzo||"",
+                 k.bar||"", k.annoAcquisto||"", cellaData(k.dataRevisione),
+                 etichettaStato(st), g!==null?g:"N/D", k.dislocazione||"",
+                 k.ultimaRevisioneTecnico||"", k.ultimaRevisioneEsito||"",
+                 contaComponenti(k.componenti, compCuscinoFuoriUso), k.id||""]);
+      statiKit.push(st);
+    });
   });
   if (rKit.length) {
     shKit.getRange(2,1,rKit.length,hKit.length).setValues(rKit);
-    rKit.forEach(function(r,i) {
-      shKit.getRange(i+2,1,1,hKit.length).setBackground(coloreStato(r[8]));
-    });
+    var nDati = 0;
+    for (var i = 0; i < rKit.length; i++) {
+      if (titoliKit.indexOf(i) >= 0) continue;
+      shKit.getRange(i+2,1,1,hKit.length).setBackground(coloreStato(statiKit[nDati]));
+      nDati++;
+    }
+    titoliKit.forEach(function(idx) { stileRigaGruppo(shKit, idx+2, hKit.length, "#1a2b3c"); });
+    shKit.getRange(2,7,rKit.length,1).setNumberFormat("dd/mm/yyyy").setHorizontalAlignment("center");
+    shKit.getRange(2,9,rKit.length,1).setNumberFormat(FORMATO_GIORNI).setHorizontalAlignment("center");
   }
-  shKit.setFrozenRows(1); shKit.autoResizeColumns(1,hKit.length);
+  formattaFoglio(shKit, hKit.length, titoliKit.map(function(i) { return i + 2; }));
 
   // Foglio COMPONENTI CUSCINI
   var shComp = ss.getSheetByName("Componenti Cuscini") || ss.insertSheet("Componenti Cuscini");
-  shComp.clearContents();
+  resetFoglio(shComp);
   var hComp = ["Kit N°","Kit Nome","Tipo","Modello","Matricola","Matr. Lucca","Bar","Note","In Servizio"];
   shComp.getRange(1,1,1,hComp.length).setValues([hComp])
     .setBackground("#243447").setFontColor("#ffffff").setFontWeight("bold");
-  var rComp = [];
+
+  // Righe raggruppate per KIT: una riga-titolo "KIT n · nome" prima di ogni blocco
+  var rComp = [], righeGruppo = {};
   kits.forEach(function(k) {
-    (k.componenti||[]).forEach(function(c) {
-      rComp.push([k.numero||"", k.nome||"", c.tipo||"", c.modello||"",
-                  c.matricola||"", c.matricolaLucca||"", c.bar||"",
-                  c.note||"", c.dataInizioServizio||""]);
-    });
+    righeGruppo[rComp.length] = 1;
+    rComp.push(["KIT " + (k.numero||"?") + (k.nome ? " · " + k.nome : ""), "","","","","","","",""]);
+    var comps = k.componenti || [];
+    if (!comps.length) {
+      rComp.push(["","","(nessun componente)","","","","","",""]);
+    } else {
+      comps.forEach(function(c) {
+        rComp.push([k.numero||"", k.nome||"", c.tipo||"", c.modello||"",
+                    c.matricola||"", c.matricolaLucca||"", c.bar||"",
+                    c.note||"", c.dataInizioServizio||""]);
+      });
+    }
   });
+
   if (rComp.length) {
     shComp.getRange(2,1,rComp.length,hComp.length).setValues(rComp);
+    // Matr. Lucca evidenziata
+    shComp.getRange(2,6,rComp.length,1)
+      .setBackground("#e6f1fb").setFontColor("#185fa5").setFontWeight("bold");
+    // Righe-titolo di gruppo (unite, sovrascrivono lo stile sopra)
     for (var i=0; i<rComp.length; i++) {
-      shComp.getRange(i+2,6).setBackground("#e6f1fb").setFontColor("#185fa5").setFontWeight("bold");
+      if (righeGruppo[i]) stileRigaGruppo(shComp, i+2, hComp.length, "#1a2b3c");
     }
   }
-  shComp.setFrozenRows(1); shComp.autoResizeColumns(1,hComp.length);
+  formattaFoglio(shComp, hComp.length, righeTitoloDa(righeGruppo));
 }
 
 function sincronizzaTaglio() {
@@ -392,53 +555,102 @@ function sincronizzaTaglio() {
 
   // Foglio KIT TAGLIO
   var shKit = ss.getSheetByName("KIT Taglio") || ss.insertSheet("KIT Taglio");
-  shKit.clearContents();
-  var hKit = ["ID","N°","Nome","Mezzo","Targa","Sistema","Marca","Anno","Prox. Revisione","Stato","Giorni","Dislocazione","Ult. Esito","Componenti"];
+  resetFoglio(shKit);
+  gruppi = ordinaPerNumero(gruppi);
+  var hKit = ["N°","Nome","Mezzo","Targa","Sistema","Marca","Anno","Prox. Revisione","Stato","Giorni","Dislocazione","Ult. Esito","Componenti","ID"];
   shKit.getRange(1,1,1,hKit.length).setValues([hKit])
     .setBackground("#7a3500").setFontColor("#ffffff").setFontWeight("bold");
-  var rKit = gruppi.map(function(g) {
-    var s    = statoGT(g, oggi);
-    var prox = prossimaRevGT(g);
-    var gg   = giorniA(prox);
-    return [g.id||"", g.numero||"", g.nome||"", g.tipoMezzo||"", g.mezzo||"",
-            g.sistema||"", g.marca||"", g.annoAcquisto||"",
-            prox&&prox!=="NO REVISIONE"?prox:prox||"N/D",
-            s, gg!==null?gg:"N/D", g.dislocazione||"",
-            g.ultimaRevisioneEsito||"", (g.componenti||[]).length];
+  // Righe raggruppate per dislocazione
+  var rKit = [], titoliKit = [], statiKit = [];
+  raggruppaPerDislocazione(gruppi).forEach(function(gr) {
+    titoliKit.push(rKit.length);
+    rKit.push([gr.dislocazione.toUpperCase() + "   ·   " + gr.items.length +
+               (gr.items.length === 1 ? " gruppo" : " gruppi"), "","","","","","","","","","","","",""]);
+    gr.items.forEach(function(g) {
+      var st   = statoGT(g, oggi);
+      var prox = prossimaRevGT(g);
+      var gg   = giorniA(prox);
+      rKit.push([g.numero||"", g.nome||"", g.tipoMezzo||"", g.mezzo||"",
+                 g.sistema||"", g.marca||"", g.annoAcquisto||"",
+                 cellaData(prox),
+                 etichettaStato(st), gg!==null?gg:"N/D", g.dislocazione||"",
+                 g.ultimaRevisioneEsito||"",
+                 contaComponenti(g.componenti, compTaglioFuoriUso), g.id||""]);
+      statiKit.push(st);
+    });
   });
   if (rKit.length) {
     shKit.getRange(2,1,rKit.length,hKit.length).setValues(rKit);
-    rKit.forEach(function(r,i) {
-      shKit.getRange(i+2,1,1,hKit.length).setBackground(coloreStato(r[9]));
-    });
+    var nDati = 0;
+    for (var i = 0; i < rKit.length; i++) {
+      if (titoliKit.indexOf(i) >= 0) continue;
+      shKit.getRange(i+2,1,1,hKit.length).setBackground(coloreStato(statiKit[nDati]));
+      nDati++;
+    }
+    titoliKit.forEach(function(idx) { stileRigaGruppo(shKit, idx+2, hKit.length, "#7a3500"); });
+    shKit.getRange(2,8,rKit.length,1).setNumberFormat("dd/mm/yyyy").setHorizontalAlignment("center");
+    shKit.getRange(2,10,rKit.length,1).setNumberFormat(FORMATO_GIORNI).setHorizontalAlignment("center");
   }
-  shKit.setFrozenRows(1); shKit.autoResizeColumns(1,hKit.length);
+  formattaFoglio(shKit, hKit.length, titoliKit.map(function(i) { return i + 2; }));
 
   // Foglio COMPONENTI TAGLIO (con olio e candela)
   var shComp = ss.getSheetByName("Componenti Taglio") || ss.insertSheet("Componenti Taglio");
-  shComp.clearContents();
+  resetFoglio(shComp);
   var hComp = ["Kit N°","Kit Nome","Tipo","Modello","Matricola","Pressione","Stato Comp.","Olio","Candela","Anno Comp.","Ultima Rev.","Prox. Rev."];
   shComp.getRange(1,1,1,hComp.length).setValues([hComp])
     .setBackground("#7a3500").setFontColor("#ffffff").setFontWeight("bold");
-  var rComp = [];
+  // Righe raggruppate per KIT: una riga-titolo "KIT n · nome" prima di ogni blocco
+  var rComp = [], righeGruppo = {};
   gruppi.forEach(function(g) {
-    (g.componenti||[]).forEach(function(c) {
-      rComp.push([g.numero||"", g.nome||"", c.tipo||"", c.modello||"",
-                  c.matricola||"", c.pressione||"", c.statoComp||"",
-                  c.olio||"", c.candela||"",
-                  c.annoComp||"", c.ultimaRevisione||"",
-                  c.prossimaRevisione&&c.prossimaRevisione!=="NO REVISIONE"?c.prossimaRevisione:c.prossimaRevisione||""]);
-    });
+    righeGruppo[rComp.length] = 1;
+    rComp.push(["KIT " + (g.numero||"?") + (g.nome ? " · " + g.nome : ""), "","","","","","","","","","",""]);
+    var comps = g.componenti || [];
+    if (!comps.length) {
+      rComp.push(["","","(nessun componente)","","","","","","","","",""]);
+    } else {
+      comps.forEach(function(c) {
+        rComp.push([g.numero||"", g.nome||"", c.tipo||"", c.modello||"",
+                    c.matricola||"", c.pressione||"", c.statoComp||"",
+                    c.olio||"", c.candela||"",
+                    c.annoComp||"", c.ultimaRevisione||"",
+                    c.prossimaRevisione&&c.prossimaRevisione!=="NO REVISIONE"?c.prossimaRevisione:c.prossimaRevisione||""]);
+      });
+    }
   });
   if (rComp.length) {
     shComp.getRange(2,1,rComp.length,hComp.length).setValues(rComp);
     // Olio in verde, candela in arancio
     for (var i=0; i<rComp.length; i++) {
+      if (righeGruppo[i]) continue;
       if (rComp[i][7]) shComp.getRange(i+2,8).setBackground("#eaf3de").setFontColor("#3b6d11").setFontWeight("bold");
       if (rComp[i][8]) shComp.getRange(i+2,9).setBackground("#faeeda").setFontColor("#854f0b").setFontWeight("bold");
     }
+    for (var j=0; j<rComp.length; j++) {
+      if (righeGruppo[j]) stileRigaGruppo(shComp, j+2, hComp.length, "#7a3500");
+    }
   }
-  shComp.setFrozenRows(1); shComp.autoResizeColumns(1,hComp.length);
+  formattaFoglio(shComp, hComp.length, righeTitoloDa(righeGruppo));
+}
+
+// Fasce di urgenza del foglio Scadenze (ordine = priorità di intervento)
+var FASCE_SCADENZE = [
+  { tit: "SCADUTE",           nota: "revisione già superata",             bgTit: "#8b1a1a", bgRiga: "#fcebeb" },
+  { tit: "ENTRO 30 GIORNI",   nota: "da programmare subito",               bgTit: "#b23c17", bgRiga: "#fde7dc" },
+  { tit: "ENTRO 90 GIORNI",   nota: "da mettere in calendario",            bgTit: "#8a6116", bgRiga: "#faeeda" },
+  { tit: "ENTRO 12 MESI",     nota: "sotto controllo",                     bgTit: "#4a6b1f", bgRiga: "#f2f7e8" },
+  { tit: "OLTRE 12 MESI",     nota: "nessuna azione richiesta",            bgTit: "#2f5d34", bgRiga: "#eaf3de" },
+  { tit: "NON PROGRAMMATE",   nota: "senza data, in magazzino o in revisione", bgTit: "#4a5560", bgRiga: "#f1f3f5" }
+];
+
+// Da giorni-a-scadenza + stato alla fascia di appartenenza
+function fasciaScadenza(giorni, stato) {
+  if (stato === "magazzino" || stato === "in_revisione" || stato === "senza_data") return 5;
+  if (giorni === null || giorni === undefined) return 5;
+  if (giorni < 0)    return 0;
+  if (giorni <= 30)  return 1;
+  if (giorni <= 90)  return 2;
+  if (giorni <= 365) return 3;
+  return 4;
 }
 
 function aggiornaScadenzeUnificate() {
@@ -448,46 +660,75 @@ function aggiornaScadenzeUnificate() {
   var oggi   = new Date();
 
   var sh = ss.getSheetByName("Scadenze") || ss.insertSheet("Scadenze");
-  sh.clearContents();
-  var h = ["Sistema","N°","Nome","Mezzo","Info","Dislocazione","Prox. Revisione","Giorni","Stato","Priorità"];
+  resetFoglio(sh);
+  var h = ["Sistema","N°","Nome","Mezzo","Info","Dislocazione","Scadenza","Giorni","Stato"];
   sh.getRange(1,1,1,h.length).setValues([h])
     .setBackground("#1a2b3c").setFontColor("#ffffff").setFontWeight("bold");
 
-  var rows = [];
+  // Raccolta voci dai due sistemi
+  var voci = [];
   kits.filter(function(k) { return k.stato !== "fuori_servizio"; }).forEach(function(k) {
-    var s = statoCalcola(k, oggi);
-    var g = giorniA(k.dataRevisione);
-    var p = s==="scaduto"?1:s==="critico"?2:s==="attenzione"?3:s==="buono"?4:5;
-    rows.push(["CUSCINI", k.numero||"", k.nome||"", k.mezzo||"",
-               (k.bar||"")+" bar", k.dislocazione||"",
-               k.dataRevisione||"", g!==null?g:"N/D", s, p]);
+    var st = statoCalcola(k, oggi), gg = giorniA(k.dataRevisione);
+    voci.push({ sistema:"CUSCINI", numero:k.numero||"", nome:k.nome||"", mezzo:k.mezzo||"",
+                info:(k.bar||"")+" bar", disloc:k.dislocazione||"", data:k.dataRevisione||"",
+                giorni:gg, stato:st, fascia:fasciaScadenza(gg, st) });
   });
   gruppi.filter(function(g) { return g.stato !== "fuori_servizio"; }).forEach(function(g) {
-    var s    = statoGT(g, oggi);
-    var prox = prossimaRevGT(g);
-    var gg   = giorniA(prox);
-    var p    = s==="scaduto"?1:s==="critico"?2:s==="attenzione"?3:s==="buono"?4:5;
-    rows.push(["TAGLIO", g.numero||"", g.nome||"", g.mezzo||"",
-               (g.sistema||"")+" · "+(g.marca||""), g.dislocazione||"",
-               prox||"N/D", gg!==null?gg:"N/D", s, p]);
+    var st = statoGT(g, oggi), prox = prossimaRevGT(g), gg = giorniA(prox);
+    voci.push({ sistema:"TAGLIO", numero:g.numero||"", nome:g.nome||"", mezzo:g.mezzo||"",
+                info:(g.sistema||"")+" · "+(g.marca||""), disloc:g.dislocazione||"", data:prox||"",
+                giorni:gg, stato:st, fascia:fasciaScadenza(gg, st) });
   });
 
-  rows.sort(function(a,b) { return a[9]-b[9] || (a[7]||9999)-(b[7]||9999); });
+  // Ordine: prima la fascia, poi i giorni crescenti
+  voci.sort(function(a, b) {
+    if (a.fascia !== b.fascia) return a.fascia - b.fascia;
+    var ga = a.giorni === null ? 99999 : a.giorni;
+    var gb = b.giorni === null ? 99999 : b.giorni;
+    return ga - gb;
+  });
 
-  if (rows.length) {
-    sh.getRange(2,1,rows.length,h.length).setValues(rows);
-    rows.forEach(function(r,i) {
-      var bg = coloreStato(r[8]);
-      sh.getRange(i+2,1,1,h.length).setBackground(bg);
-      // Sistema badge colore
-      if (r[0]==="CUSCINI") sh.getRange(i+2,1).setBackground("#e6f1fb").setFontColor("#1a2b3c").setFontWeight("bold");
-      else sh.getRange(i+2,1).setBackground("#faeeda").setFontColor("#7a3500").setFontWeight("bold");
+  // Righe dati precedute dall'intestazione di fascia
+  var rows = [], intestazioni = [], bgRighe = [];
+  for (var f = 0; f < FASCE_SCADENZE.length; f++) {
+    var blocco = voci.filter(function(v) { return v.fascia === f; });
+    if (!blocco.length) continue;
+    var F = FASCE_SCADENZE[f];
+    intestazioni.push({ idx: rows.length, bg: F.bgTit });
+    rows.push([F.tit + "   ·   " + blocco.length + (blocco.length === 1 ? " voce" : " voci") + "   ·   " + F.nota,
+               "","","","","","","",""]);
+    bgRighe.push(null);
+    blocco.forEach(function(v) {
+      var cella = "N/D";
+      if (v.data) { var d = new Date(v.data); cella = isNaN(d) ? v.data : d; }
+      rows.push([v.sistema, v.numero, v.nome, v.mezzo, v.info, v.disloc,
+                 cella, v.giorni === null ? "N/D" : v.giorni, etichettaStato(v.stato)]);
+      bgRighe.push(F.bgRiga);
     });
   }
 
-  sh.setFrozenRows(1);
-  sh.hideColumns(10); // nascondi colonna priorità
-  sh.autoResizeColumns(1,9);
+  if (rows.length) {
+    sh.getRange(2,1,rows.length,h.length).setValues(rows);
+
+    // Sfondo per fascia + badge sistema
+    for (var i = 0; i < rows.length; i++) {
+      if (!bgRighe[i]) continue;
+      sh.getRange(i+2,1,1,h.length).setBackground(bgRighe[i]);
+      if (rows[i][0] === "CUSCINI") sh.getRange(i+2,1).setBackground("#e6f1fb").setFontColor("#1a2b3c").setFontWeight("bold");
+      else                          sh.getRange(i+2,1).setBackground("#faeeda").setFontColor("#7a3500").setFontWeight("bold");
+    }
+    // Intestazioni di fascia
+    intestazioni.forEach(function(t) { stileRigaGruppo(sh, t.idx+2, h.length, t.bg); });
+
+    // Formati: data italiana, giorni con unità e negativi in rosso
+    sh.getRange(2,7,rows.length,1).setNumberFormat("dd/mm/yyyy").setHorizontalAlignment("center");
+    sh.getRange(2,8,rows.length,1).setNumberFormat(FORMATO_GIORNI).setHorizontalAlignment("center");
+    sh.getRange(2,9,rows.length,1).setHorizontalAlignment("center");
+    sh.getRange(2,1,rows.length,1).setHorizontalAlignment("center");
+  }
+
+  formattaFoglio(sh, h.length, intestazioni.map(function(t) { return t.idx + 2; }));
+  // niente setFrozenColumns: le intestazioni di fascia sono celle unite e Sheets rifiuta il blocco
 }
 
 // ─── GESTIONE DOCUMENTI DRIVE ────────────────────────────────
@@ -601,3 +842,10 @@ function eliminaDocumento(docId) {
   UrlFetchApp.fetch(url, { method: "DELETE", muteHttpExceptions: true });
   return { success: true };
 }
+
+function diagnosi() {
+    var url = FIRESTORE_BASE + "/kits?key=" + FIREBASE_API_KEY + "&pageSize=1";
+    var resp = UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    Logger.log("HTTP " + resp.getResponseCode());
+    Logger.log(resp.getContentText().substring(0, 400));
+  }
