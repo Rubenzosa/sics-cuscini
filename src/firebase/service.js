@@ -4,7 +4,7 @@ import {
   updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { calcolaProssimaRevisione, scadenzaConIntervallo } from "../utils";
+import { calcolaProssimaRevisione, scadenzaConIntervallo, oggiIso } from "../utils";
 
 const KITS = "kits";
 const STORICO_SOST = "storico_sostituzioni";
@@ -181,7 +181,7 @@ export async function inviaInRevisione(kitId, officina, dataInvio, dataRientroSt
     kitId, kitNumero: kit.numero, kitNome: kit.nome,
     mezzo: kit.mezzo, dislocazione: kit.dislocazione,
     officina: officina || "",
-    dataInvio: dataInvio || new Date().toISOString().split("T")[0],
+    dataInvio: dataInvio || oggiIso(),
     dataRientroStimata: dataRientroStimata || "",
     dataRientroEffettiva: null,
     note: note || "",
@@ -190,7 +190,7 @@ export async function inviaInRevisione(kitId, officina, dataInvio, dataRientroSt
   });
   await updateDoc(doc(db, KITS, kitId), {
     stato: "in_revisione",
-    dataInvioRevisione: dataInvio || new Date().toISOString().split("T")[0],
+    dataInvioRevisione: dataInvio || oggiIso(),
     dataRientroStimata: dataRientroStimata || "",
     officina: officina || "",
   });

@@ -5,7 +5,7 @@ import {
   aggiungiRevisione, getRevisioni, spostaKit, getStoricoSpostamenti,
   uploadAllegato, getAllegatiKit, deleteAllegato, mettiComponenteFuoriUso,
 } from "../firebase/service";
-import { calcolaStato, statoLabel, formatData, giorniAllaScadenza, componentiFuoriUso } from "../utils";
+import { calcolaStato, statoLabel, formatData, giorniAllaScadenza, componentiFuoriUso, oggiIso } from "../utils";
 import Documenti from "../components/Documenti";
 import { PROSSIMI_SERIALI, buildMatricolaLucca } from "../data/kitData";
 
@@ -153,11 +153,11 @@ export default function KitDetail({ kits, reload }) {
   const [revisioni, setRevisioni] = useState([]);
   const [storicoSpost, setStoricoSpost] = useState([]);
 
-  const [nuovoComp, setNuovoComp] = useState({ tipo:"", modello:"", matricola:"", bar:8, matricolaLucca:"", dataInizioServizio: new Date().toISOString().split("T")[0], dataRevisione:"", note:"" });
+  const [nuovoComp, setNuovoComp] = useState({ tipo:"", modello:"", matricola:"", bar:8, matricolaLucca:"", dataInizioServizio: oggiIso(), dataRevisione:"", note:"" });
   const [destComp, setDestComp] = useState("fuori_uso");
   const [noteUscita, setNoteUscita] = useState("");
 
-  const [formRev, setFormRev] = useState({ dataRevisione: new Date().toISOString().split("T")[0], tecnico:"", ente:"", esito:"positivo", note:"", intervalloAnni: kit?.intervalloRevisioneAnni ?? "" });
+  const [formRev, setFormRev] = useState({ dataRevisione: oggiIso(), tecnico:"", ente:"", esito:"positivo", note:"", intervalloAnni: kit?.intervalloRevisioneAnni ?? "" });
   const [formSpost, setFormSpost] = useState({ nuovoMezzo:"", nuovaTarga:"", nuovaDislocazione:"Sede Centrale", motivo:"" });
 
   useEffect(() => {
@@ -184,7 +184,7 @@ export default function KitDetail({ kits, reload }) {
 
   function apriSostituisci(i) {
     const c = kit.componenti[i];
-    setNuovoComp({ tipo:c.tipo, modello:"", matricola:"", bar:c.bar||kit.bar, matricolaLucca:calcolaMatricolaAuto(c.tipo, c.bar||kit.bar, kits), dataInizioServizio:new Date().toISOString().split("T")[0], dataRevisione:"", note:"" });
+    setNuovoComp({ tipo:c.tipo, modello:"", matricola:"", bar:c.bar||kit.bar, matricolaLucca:calcolaMatricolaAuto(c.tipo, c.bar||kit.bar, kits), dataInizioServizio:oggiIso(), dataRevisione:"", note:"" });
     setDestComp("fuori_uso"); setNoteUscita(""); setModalSost(i);
   }
 

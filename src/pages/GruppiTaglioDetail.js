@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT } from "../firebase/service";
-import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge } from "../utils";
+import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso } from "../utils";
 import Documenti from "../components/Documenti";
 
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
@@ -19,8 +19,8 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const [modalMan, setModalMan]   = useState(false);
   const [saving, setSaving]       = useState(false);
 
-  const [formRev, setFormRev] = useState({ dataRevisione: new Date().toISOString().split("T")[0], esito:"positivo", tecnico:"", ente:"", note:"", intervalloAnni: gt?.intervalloRevisioneAnni ?? "" });
-  const [formMan, setFormMan] = useState({ data: new Date().toISOString().split("T")[0], tipo:"Cambio olio", olio:"", candela:"", note:"", componenteInteressato:"" });
+  const [formRev, setFormRev] = useState({ dataRevisione: oggiIso(), esito:"positivo", tecnico:"", ente:"", note:"", intervalloAnni: gt?.intervalloRevisioneAnni ?? "" });
+  const [formMan, setFormMan] = useState({ data: oggiIso(), tipo:"Cambio olio", olio:"", candela:"", note:"", componenteInteressato:"" });
 
   useEffect(() => {
     if (!gt) return;

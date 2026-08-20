@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { saveKit, getAllKits } from "../firebase/service";
 import { suggerisciMatricola } from "../numerazione";
+import { oggiIso } from "../utils";
 
 const DISLOCAZIONI = ["Sede Centrale","Magazzino","Montepulciano","Montalcino","Poggibonsi","Piancastagnaio"];
 const TIPI_COMP = [
@@ -23,7 +24,7 @@ function emptyComp(kitBar, tuttiKits) {
   return {
     tipo, modello: "", matricola: "",
     bar, matricolaLucca: calcolaMatricolaLucca(tipo, bar, tuttiKits),
-    dataInizioServizio: new Date().toISOString().split("T")[0],
+    dataInizioServizio: oggiIso(),
     dataRevisione: "", note: ""
   };
 }
