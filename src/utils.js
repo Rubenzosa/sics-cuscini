@@ -314,6 +314,67 @@ export function calcolaCopertura(kits) {
 
 // ─── UTILS GRUPPI DA TAGLIO ──────────────────────────────────
 
+// STATO OPERATIVO DEL SINGOLO COMPONENTE (TAGLIO)
+// statoOperativo: assente | "attivo" | "in_revisione" | "fuori_servizio".
+// Assente = attivo (retrocompatibilita con i dati gia presenti su Firestore).
+// Un componente non attivo e fisicamente fuori dal kit: la sua scadenza
+// non deve far risultare scaduto lintero gruppo.
+export function componenteAttivoGT(c) {
+  const s = c?.statoOperativo;
+  return !s || s === "attivo";
+}
+
+// Conteggio dei componenti non operativi di un kit da taglio.
+// totale > 0 -> kit funzionante ma incompleto.
+export function componentiNonOperativiGT(gt) {
+  const comp = gt?.componenti || [];
+  const inRevisione   = comp.filter(c => c?.statoOperativo === "in_revisione").length;
+  const fuoriServizio = comp.filter(c => c?.statoOperativo === "fuori_servizio").length;
+  return { inRevisione, fuoriServizio, totale: inRevisione + fuoriServizio };
+}
+
+// Applica uno stato operativo a UN solo componente del kit da taglio.
+// Funzione pura: ritorna un nuovo array, non modifica quello ricevuto.
+// stato "attivo" = rientro in servizio, ripulisce motivo/note/officina.
+export function applicaStatoComponenteGT(componenti, index, stato, dati = {}) {
+  const lista = componenti || [];
+  if (!lista[index]) return lista;
+  const out = [...lista];
+  const c = { ...out[index] };
+  if (stato === "attivo") {
+    out[index] = {
+      ...c,
+      statoOperativo: "attivo",
+      motivoStato: "",
+      noteStato: "",
+      officina: "",
+      dataRientro: dati.data || "",
+    };
+  } else {
+    out[index] = {
+      ...c,
+      statoOperativo: stato,
+      motivoStato: dati.motivo || "",
+      noteStato: dati.note || "",
+      dataStato: dati.data || "",
+      officina: dati.officina || "",
+      dataRientro: "",
+    };
+  }
+  return out;
+}
+
+// Revisione dellintero kit da taglio: aggiorna le scadenze dei soli
+// componenti attivi e con revisione prevista. Chi e in officina o fuori
+// servizio non e stato revisionato, quindi resta invariato.
+export function patchComponentiRevisioneGT(componenti, dataRevisione, nuovaProssima) {
+  return (componenti || []).map(c =>
+    c.prossimaRevisione === "NO REVISIONE" || !componenteAttivoGT(c)
+      ? c
+      : { ...c, ultimaRevisione: dataRevisione, prossimaRevisione: nuovaProssima }
+  );
+}
+
 export function calcolaStatoGT(gt) {
   if (gt.stato === "fuori_servizio") return "fuori_servizio";
   if (gt.stato === "fuori_uso")      return "fuori_uso";
@@ -322,6 +383,7 @@ export function calcolaStatoGT(gt) {
 
   // Usa la prossima revisione più vicina tra tutti i componenti
   const date = (gt.componenti || [])
+    .filter(componenteAttivoGT)
     .map(c => c.prossimaRevisione)
     .filter(d => d && d !== "NO REVISIONE" && d !== null)
     .map(d => new Date(d))
@@ -344,6 +406,7 @@ export function calcolaStatoGT(gt) {
 
 export function prossimaRevisioneGT(gt) {
   const date = (gt.componenti || [])
+    .filter(componenteAttivoGT)
     .map(c => c.prossimaRevisione)
     .filter(d => d && d !== "NO REVISIONE" && d !== null);
   if (!date.length) return null;

@@ -1,11 +1,25 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT } from "../firebase/service";
-import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso } from "../utils";
+import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT, cambiaStatoComponenteGT, getStatiComponentiGT } from "../firebase/service";
+import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso, componenteAttivoGT, componentiNonOperativiGT } from "../utils";
 import Documenti from "../components/Documenti";
 
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
+
+// Motivi ricorrenti per cui un componente finisce in officina o fuori servizio.
+// Sono suggerimenti: il campo resta a testo libero.
+const MOTIVI_STATO = [
+  "Perdita olio", "Perdita di pressione", "Grippato", "Non avvia",
+  "Rottura lame", "Rottura punte", "Perdita raccordo", "Tubo danneggiato",
+  "Batteria esausta", "Cavo danneggiato", "Danno da urto", "Revisione periodica",
+];
+
+const ETICHETTA_STATO = {
+  in_revisione: "In revisione",
+  fuori_servizio: "Fuori servizio",
+  attivo: "Rientro in servizio",
+};
 
 export default function GruppiTaglioDetail({ gruppi, reload }) {
   const { id } = useParams();
@@ -18,6 +32,9 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const [modalRev, setModalRev]   = useState(false);
   const [modalMan, setModalMan]   = useState(false);
   const [saving, setSaving]       = useState(false);
+  const [statiComp, setStatiComp] = useState([]);
+  const [modalStato, setModalStato] = useState(null); // { index, stato }
+  const [formStato, setFormStato]   = useState({ motivo:"", note:"", data: oggiIso(), officina:"", revisioneEseguita:false, intervalloAnni:"" });
 
   const [formRev, setFormRev] = useState({ dataRevisione: oggiIso(), esito:"positivo", tecnico:"", ente:"", note:"", intervalloAnni: gt?.intervalloRevisioneAnni ?? "" });
   const [formMan, setFormMan] = useState({ data: oggiIso(), tipo:"Cambio olio", olio:"", candela:"", note:"", componenteInteressato:"" });
@@ -26,6 +43,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
     if (!gt) return;
     getRevisioniGT(gt.id).then(setRevisioni);
     getManutenzioniGT(gt.id).then(setManutenzioni);
+    getStatiComponentiGT(gt.id).then(setStatiComp);
   }, [gt]);
 
   if (!gt) return (
@@ -38,6 +56,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const proxRev = prossimaRevisioneGT(gt);
   const giorni  = giorniAllaScadenza(proxRev);
   const badge   = sistemaBadge(gt.sistema);
+  const fermi   = componentiNonOperativiGT(gt);
 
   async function handleDelete() {
     if (!window.confirm(`Eliminare il gruppo "${gt.nome}"?`)) return;
@@ -59,6 +78,35 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
     setSaving(true);
     try { await aggiungiManutenzioneGT(gt.id, formMan); setModalMan(false); getManutenzioniGT(gt.id).then(setManutenzioni); }
     catch(e) { alert("Errore: "+e.message); }
+    setSaving(false);
+  }
+
+  function apriStato(index, stato) {
+    const c = (gt.componenti || [])[index] || {};
+    setFormStato({
+      motivo: "", note: "", data: oggiIso(),
+      officina: stato === "in_revisione" ? (c.officina || "") : "",
+      revisioneEseguita: false,
+      intervalloAnni: gt.intervalloRevisioneAnni ?? "",
+    });
+    setModalStato({ index, stato });
+  }
+
+  async function salvaStatoComponente() {
+    const { index, stato } = modalStato;
+    if (!formStato.data) { alert("Inserisci la data"); return; }
+    if (stato !== "attivo" && !formStato.motivo.trim()) { alert("Indica il motivo (es. perdita olio)"); return; }
+    if (stato === "attivo" && formStato.revisioneEseguita && !(Number(formStato.intervalloAnni) > 0)) {
+      alert("Indica ogni quanti anni va revisionato questo componente.");
+      return;
+    }
+    setSaving(true);
+    try {
+      await cambiaStatoComponenteGT(gt.id, index, stato, formStato);
+      await reload();
+      setModalStato(null);
+      getStatiComponentiGT(gt.id).then(setStatiComp);
+    } catch(e) { alert("Errore: "+e.message); }
     setSaving(false);
   }
 
@@ -101,6 +149,14 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           <div style={{ background:"#111", borderRadius:"var(--radius-sm)", padding:12 }}>
             <Documenti kitId={gt.id} kitNome={gt.nome} sistema="taglio"/>
           </div>
+        </div>
+      )}
+      {fermi.totale > 0 && (
+        <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>
+          Kit incompleto — {fermi.inRevisione > 0 ? fermi.inRevisione + " in revisione" : ""}
+          {fermi.inRevisione > 0 && fermi.fuoriServizio > 0 ? " · " : ""}
+          {fermi.fuoriServizio > 0 ? fermi.fuoriServizio + " fuori servizio" : ""}
+          {" · vedi tab Componenti"}
         </div>
       )}
       {stato==="scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>⚠ Revisione scaduta da {Math.abs(giorni)} giorni</div>}
@@ -190,6 +246,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
         <div className="card">
           <div className="card-header">
             <span className="card-title">Componenti ({(gt.componenti||[]).length})</span>
+            <span style={{ fontSize:11, color:"var(--text3)" }}>Un componente fermo non fa scadere il kit</span>
           </div>
           {GRUPPI_COMP.map(({ label, types }) => {
             const items = (gt.componenti||[]).filter(c => types.includes(c.tipo?.trim()));
@@ -199,41 +256,100 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
                 <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>
                   {label} ({items.length})
                 </div>
-                {items.map((c,i) => (
-                  <div key={i} style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderRadius:"var(--radius-sm)", padding:"12px 14px", marginBottom:8 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
-                      <div style={{ flex:1 }}>
-                        <div style={{ fontWeight:700, fontSize:13 }}>{c.tipo}</div>
-                        <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>{c.modello||"—"}</div>
-                        <div style={{ display:"flex", gap:8, marginTop:6, flexWrap:"wrap" }}>
-                          {c.olio && <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--green-bg)", color:"var(--green-text)" }}>🛢 {c.olio}</span>}
-                          {c.candela && <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--amber-bg)", color:"var(--amber-text)" }}>⚡ {c.candela}</span>}
-                          {c.statoComp && c.statoComp!=="Ottimo" && (
-                            <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--red-bg)", color:"var(--red-text)" }}>{c.statoComp}</span>
+                {items.map(c => {
+                  const ri     = (gt.componenti||[]).indexOf(c);
+                  const attivo = componenteAttivoGT(c);
+                  const inRev  = c.statoOperativo === "in_revisione";
+                  const colore = inRev ? "#ba7517" : "#e24b4a";
+                  return (
+                    <div key={ri} style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderLeft: attivo ? "1px solid var(--border)" : "3px solid "+colore, borderRadius:"var(--radius-sm)", padding:"12px 14px", marginBottom:8, opacity: attivo ? 1 : 0.75 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                            <span style={{ fontWeight:700, fontSize:13, textDecoration: attivo ? "none" : "line-through", color: attivo ? "var(--text)" : "var(--text3)" }}>{c.tipo}</span>
+                            {inRev && <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:"var(--amber-bg)", color:"var(--amber-text)" }}>IN REVISIONE</span>}
+                            {c.statoOperativo==="fuori_servizio" && <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:"var(--red-bg)", color:"var(--red-text)" }}>FUORI SERVIZIO</span>}
+                          </div>
+                          <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>{c.modello||"—"}</div>
+                          {!attivo && (
+                            <div style={{ fontSize:11, color: inRev ? "var(--amber-text)" : "var(--red-text)", marginTop:4, fontWeight:600 }}>
+                              {inRev ? "In officina dal " : "Fuori servizio dal "}{formatData(c.dataStato)}
+                              {c.motivoStato ? " — "+c.motivoStato : ""}
+                              {c.officina ? " · "+c.officina : ""}
+                              {c.noteStato ? " · "+c.noteStato : ""}
+                            </div>
+                          )}
+                          <div style={{ display:"flex", gap:8, marginTop:6, flexWrap:"wrap" }}>
+                            {c.olio && <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--green-bg)", color:"var(--green-text)" }}>🛢 {c.olio}</span>}
+                            {c.candela && <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--amber-bg)", color:"var(--amber-text)" }}>⚡ {c.candela}</span>}
+                            {c.statoComp && c.statoComp!=="Ottimo" && (
+                              <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--red-bg)", color:"var(--red-text)" }}>{c.statoComp}</span>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{ textAlign:"right", minWidth:140 }}>
+                          {c.pressione && <div style={{ fontSize:11, fontWeight:700, color:"var(--text2)" }}>{c.pressione}</div>}
+                          {c.matricola && <div className="mono" style={{ marginTop:2 }}>{c.matricola}</div>}
+                          <div style={{ fontSize:10, color:"var(--text3)", marginTop:4 }}>
+                            Anno: {c.annoComp||"—"}
+                          </div>
+                          {c.prossimaRevisione && c.prossimaRevisione!=="NO REVISIONE" && (
+                            <div style={{ fontSize:10, color:"var(--text3)", marginTop:2 }}>
+                              Rev: {formatData(c.prossimaRevisione)}
+                            </div>
+                          )}
+                          {c.prossimaRevisione==="NO REVISIONE" && (
+                            <div style={{ fontSize:10, color:"var(--green-text)", fontWeight:700, marginTop:2 }}>No revisione</div>
                           )}
                         </div>
                       </div>
-                      <div style={{ textAlign:"right", minWidth:140 }}>
-                        {c.pressione && <div style={{ fontSize:11, fontWeight:700, color:"var(--text2)" }}>{c.pressione}</div>}
-                        {c.matricola && <div className="mono" style={{ marginTop:2 }}>{c.matricola}</div>}
-                        <div style={{ fontSize:10, color:"var(--text3)", marginTop:4 }}>
-                          Anno: {c.annoComp||"—"}
-                        </div>
-                        {c.prossimaRevisione && c.prossimaRevisione!=="NO REVISIONE" && (
-                          <div style={{ fontSize:10, color:"var(--text3)", marginTop:2 }}>
-                            Rev: {formatData(c.prossimaRevisione)}
-                          </div>
-                        )}
-                        {c.prossimaRevisione==="NO REVISIONE" && (
-                          <div style={{ fontSize:10, color:"var(--green-text)", fontWeight:700, marginTop:2 }}>No revisione</div>
+                      <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:10, flexWrap:"wrap" }}>
+                        {attivo ? (
+                          <>
+                            <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--amber-text)", borderColor:"#fac775", background:"var(--amber-bg)" }} onClick={() => apriStato(ri, "in_revisione")}>
+                              Manda in revisione
+                            </button>
+                            <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--red-text)", borderColor:"#e8a3a3", background:"var(--red-bg)" }} onClick={() => apriStato(ri, "fuori_servizio")}>
+                              Metti fuori servizio
+                            </button>
+                          </>
+                        ) : (
+                          <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--green-text)", borderColor:"#a8c98a", background:"var(--green-bg)", fontWeight:700 }} onClick={() => apriStato(ri, "attivo")}>
+                            Rimetti in servizio
+                          </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })}
+
+          {statiComp.length > 0 && (
+            <div style={{ marginTop:24, borderTop:"1px solid var(--border)", paddingTop:14 }}>
+              <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>
+                Storico guasti e fermi ({statiComp.length})
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Data</th><th>Componente</th><th>Stato</th><th>Motivo</th><th>Officina</th><th>Note</th></tr></thead>
+                  <tbody>
+                    {statiComp.map(s => (
+                      <tr key={s.id}>
+                        <td style={{ whiteSpace:"nowrap" }}>{formatData(s.data)}</td>
+                        <td style={{ fontWeight:600 }}>{s.componenteTipo}{s.componenteMatricola ? " · "+s.componenteMatricola : ""}</td>
+                        <td>{ETICHETTA_STATO[s.stato] || s.stato}</td>
+                        <td>{s.motivo||"—"}</td>
+                        <td>{s.officina||"—"}</td>
+                        <td style={{ fontSize:12, color:"var(--text3)" }}>{s.note||"—"}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -305,6 +421,94 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           <Documenti kitId={gt.id} kitNome={gt.nome} sistema="taglio"/>
         </div>
       )}
+
+      {/* MODAL STATO SINGOLO COMPONENTE */}
+      {modalStato && (() => {
+        const comp   = (gt.componenti || [])[modalStato.index] || {};
+        const stato  = modalStato.stato;
+        const rientro = stato === "attivo";
+        const titolo = rientro
+          ? "Rimetti in servizio"
+          : stato === "in_revisione" ? "Manda in revisione" : "Metti fuori servizio";
+        return (
+          <div className="modal-overlay">
+            <div className="modal" style={{ maxWidth:500 }}>
+              <div className="modal-header">
+                <span className="modal-title">{titolo} — {comp.tipo}</span>
+                <button className="modal-close" onClick={() => setModalStato(null)}>✕</button>
+              </div>
+              <div style={{ fontSize:12, color:"var(--text3)", marginBottom:12 }}>
+                {comp.modello || "—"}{comp.matricola ? " · matr. " + comp.matricola : ""}
+              </div>
+
+              {rientro && comp.motivoStato && (
+                <div style={{ fontSize:12, color:"var(--amber-text)", background:"var(--amber-bg)", padding:"8px 12px", borderRadius:"var(--radius-sm)", marginBottom:12 }}>
+                  Fermo dal {formatData(comp.dataStato)} — {comp.motivoStato}
+                  {comp.officina ? " · " + comp.officina : ""}
+                </div>
+              )}
+
+              <div className="form-grid">
+                <div className="form-group">
+                  <label>{rientro ? "Data rientro" : "Data"}</label>
+                  <input type="date" value={formStato.data} onChange={e => setFormStato(p => ({...p, data:e.target.value}))}/>
+                </div>
+
+                {!rientro && (
+                  <>
+                    <div className="form-group">
+                      <label>Motivo</label>
+                      <input list="motivi-stato-comp" value={formStato.motivo} onChange={e => setFormStato(p => ({...p, motivo:e.target.value}))} placeholder="es. Perdita olio"/>
+                      <datalist id="motivi-stato-comp">
+                        {MOTIVI_STATO.map(m => <option key={m} value={m}/>)}
+                      </datalist>
+                    </div>
+                    {stato === "in_revisione" && (
+                      <div className="form-group">
+                        <label>Officina / ditta</label>
+                        <input value={formStato.officina} onChange={e => setFormStato(p => ({...p, officina:e.target.value}))} placeholder="es. Lukas Service"/>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {rientro && (
+                  <div className="form-group" style={{ gridColumn:"1/-1" }}>
+                    <label style={{ display:"flex", alignItems:"center", gap:8, cursor:"pointer" }}>
+                      <input type="checkbox" style={{ width:"auto" }} checked={formStato.revisioneEseguita} onChange={e => setFormStato(p => ({...p, revisioneEseguita:e.target.checked}))}/>
+                      Revisione eseguita su questo componente
+                    </label>
+                  </div>
+                )}
+                {rientro && formStato.revisioneEseguita && (
+                  <div className="form-group">
+                    <label>Prossima revisione tra (anni)</label>
+                    <input type="number" min="1" step="1" value={formStato.intervalloAnni} onChange={e => setFormStato(p => ({...p, intervalloAnni:e.target.value}))} placeholder="es. 3"/>
+                  </div>
+                )}
+
+                <div className="form-group" style={{ gridColumn:"1/-1" }}>
+                  <label>Note</label>
+                  <textarea value={formStato.note} onChange={e => setFormStato(p => ({...p, note:e.target.value}))} rows={2} placeholder={rientro ? "es. sostituite guarnizioni" : "dettagli del guasto"}/>
+                </div>
+              </div>
+
+              <div style={{ fontSize:11, color:"var(--text3)", marginTop:12 }}>
+                {rientro
+                  ? "Il componente torna a contare per la scadenza del kit."
+                  : "Il componente resta nel kit ma non conta piu' per la scadenza, finche' non rientra."}
+              </div>
+
+              <div style={{ display:"flex", justifyContent:"flex-end", gap:10, marginTop:16 }}>
+                <button className="btn btn-secondary" onClick={() => setModalStato(null)}>Annulla</button>
+                <button className={rientro ? "btn btn-success" : "btn btn-primary"} onClick={salvaStatoComponente} disabled={saving}>
+                  {saving ? "Salvataggio..." : "Conferma"}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* MODAL REVISIONE */}
       {modalRev && (

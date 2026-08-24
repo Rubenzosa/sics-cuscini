@@ -4,7 +4,7 @@ import {
   updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { calcolaProssimaRevisione, scadenzaConIntervallo, oggiIso } from "../utils";
+import { calcolaProssimaRevisione, scadenzaConIntervallo, oggiIso, applicaStatoComponenteGT, patchComponentiRevisioneGT } from "../utils";
 
 const KITS = "kits";
 const STORICO_SOST = "storico_sostituzioni";
@@ -241,6 +241,7 @@ export async function getRotazioniKit(kitId) {
 const GT = "gruppi_taglio";
 const GT_REV = "gt_revisioni";
 const GT_MANUTENZIONE = "gt_manutenzione";
+const GT_STATI_COMP = "gt_stati_componenti";
 
 export async function getAllGruppiTaglio() {
   const snap = await getDocs(collection(db, GT));
@@ -288,11 +289,7 @@ export async function aggiungiRevisioneGT(gtId, revisione) {
   const nAnni = Number(revisione.intervalloAnni);
   if (nuovaProssima) {
     patch.intervalloRevisioneAnni = nAnni;
-    patch.componenti = (gt.componenti || []).map(c =>
-      c.prossimaRevisione === "NO REVISIONE"
-        ? c
-        : { ...c, ultimaRevisione: revisione.dataRevisione, prossimaRevisione: nuovaProssima }
-    );
+    patch.componenti = patchComponentiRevisioneGT(gt.componenti, revisione.dataRevisione, nuovaProssima);
   }
   await updateDoc(doc(db, GT, gtId), patch);
 }
@@ -326,6 +323,54 @@ export async function getManutenzioniGT(gtId) {
 export async function getAllManutenzioniGT() {
   const snap = await getDocs(collection(db, GT_MANUTENZIONE));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
+}
+
+// Stato operativo del SINGOLO componente di un kit da taglio.
+// stato: "in_revisione" | "fuori_servizio" | "attivo" (rientro).
+// Il componente resta nel kit, marcato con motivo e date; ogni passaggio
+// viene registrato in GT_STATI_COMP per non perdere lo storico dei guasti.
+export async function cambiaStatoComponenteGT(gtId, indexComp, stato, dati = {}) {
+  const snap = await getDoc(doc(db, GT, gtId));
+  if (!snap.exists()) throw new Error("Gruppo taglio non trovato");
+  const gt = snap.data();
+  const precedente = (gt.componenti || [])[indexComp];
+  if (!precedente) throw new Error("Componente non trovato");
+
+  const componenti = applicaStatoComponenteGT(gt.componenti, indexComp, stato, dati);
+
+  // Rientro dallofficina con revisione eseguita: aggiorna la scadenza
+  // del solo componente rientrato, senza toccare gli altri.
+  if (stato === "attivo" && dati.revisioneEseguita && dati.data) {
+    const nuova = scadenzaConIntervallo(dati.data, dati.intervalloAnni);
+    if (nuova) {
+      componenti[indexComp] = { ...componenti[indexComp], ultimaRevisione: dati.data, prossimaRevisione: nuova };
+    }
+  }
+
+  await addDoc(collection(db, GT_STATI_COMP), {
+    gtId, gtNome: gt.nome || "", gtNumero: gt.numero || "",
+    indexComp,
+    componenteTipo: precedente.tipo || "",
+    componenteModello: precedente.modello || "",
+    componenteMatricola: precedente.matricola || "",
+    statoPrecedente: precedente.statoOperativo || "attivo",
+    stato,
+    motivo: dati.motivo || "",
+    note: dati.note || "",
+    officina: dati.officina || "",
+    data: dati.data || oggiIso(),
+    dataRegistrazione: new Date().toISOString(),
+    timestamp: serverTimestamp(),
+  });
+
+  await updateDoc(doc(db, GT, gtId), { componenti });
+}
+
+export async function getStatiComponentiGT(gtId) {
+  const snap = await getDocs(collection(db, GT_STATI_COMP));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .filter(r => r.gtId === gtId)
     .sort((a, b) => (b.data || "").localeCompare(a.data || ""));
 }
 

@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Ring from "./Ring";
-import { statoLabel, formatData, componentiFuoriUso } from "../utils";
+import { statoLabel, formatData, componentiFuoriUso, componentiNonOperativiGT, componenteAttivoGT } from "../utils";
 
 const BORDER = {
   scaduto: "var(--red)", critico: "var(--red)", attenzione: "var(--amber)",
@@ -16,7 +16,11 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
     ? `${item.sistema || ""}${item.marca ? " · " + item.marca : ""} · ${item.dislocazione || ""}`
     : `${item.bar} bar · ${item.dislocazione || ""}`;
   const comps = item.componenti || [];
-  const nFU = componentiFuoriUso(item);
+  // Cuscini: componenti marcati fuoriUso. Taglio: componenti in revisione o fuori servizio.
+  const nFU = isTaglio ? componentiNonOperativiGT(item).totale : componentiFuoriUso(item);
+  const titoloFU = isTaglio
+    ? nFU + " componente/i fermo/i (in revisione o fuori servizio)"
+    : nFU + " componente/i fuori uso da sostituire";
 
   return (
     <div className="card" style={{ padding: 0, marginBottom: 12, borderLeft: `4px solid ${borderColor}`, overflow: "hidden" }}>
@@ -33,7 +37,7 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
         </span>
         <Ring giorni={giorni} stato={stato} />
         {nFU > 0 && (
-          <span title={`${nFU} componente/i fuori uso da sostituire`} style={{
+          <span title={titoloFU} style={{
             fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 12,
             background: "var(--amber-bg)", color: "var(--amber-text)", whiteSpace: "nowrap", flexShrink: 0,
           }}>−{nFU} comp.</span>
@@ -60,7 +64,11 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
           {comps.map((c, i) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "var(--bg3)", border: "1px solid var(--border)", borderRadius: "var(--radius-sm)", marginBottom: 6 }}>
               <span style={{ flex: 1, minWidth: 0 }}>
-                <span style={{ display: "block", fontSize: 12, fontWeight: 700 }}>{c.tipo}</span>
+                <span style={{ display: "block", fontSize: 12, fontWeight: 700, textDecoration: isTaglio && !componenteAttivoGT(c) ? "line-through" : "none", color: isTaglio && !componenteAttivoGT(c) ? "var(--text3)" : "inherit" }}>
+                  {c.tipo}
+                  {isTaglio && c.statoOperativo === "in_revisione" && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 8, background: "var(--amber-bg)", color: "var(--amber-text)" }}>IN REVISIONE</span>}
+                  {isTaglio && c.statoOperativo === "fuori_servizio" && <span style={{ marginLeft: 6, fontSize: 9, fontWeight: 800, padding: "1px 6px", borderRadius: 8, background: "var(--red-bg)", color: "var(--red-text)" }}>FUORI SERVIZIO</span>}
+                </span>
                 <span style={{ display: "block", fontSize: 10, color: "var(--text3)" }}>{c.modello || "—"}</span>
               </span>
               {isTaglio ? (
