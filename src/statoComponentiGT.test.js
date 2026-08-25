@@ -5,6 +5,7 @@ import {
   componenteAttivoGT,
   applicaStatoComponenteGT,
   patchComponentiRevisioneGT,
+  riepilogoFermiComponente,
 } from "./utils";
 
 const oggi = new Date();
@@ -134,5 +135,39 @@ describe("patchComponentiRevisioneGT", () => {
     expect(out[1]).toEqual(componenti[1]);
     expect(out[2]).toEqual(componenti[2]);
     expect(out[3]).toEqual(componenti[3]);
+  });
+});
+
+describe("riepilogoFermiComponente", () => {
+  const stati = [
+    { componenteMatricola:"1261646HH", indexComp:0, stato:"in_revisione",   data:"2024-03-01" },
+    { componenteMatricola:"1261646HH", indexComp:0, stato:"attivo",          data:"2024-05-01" },
+    { componenteMatricola:"1261646HH", indexComp:0, stato:"fuori_servizio",  data:"2025-07-01" },
+    { componenteMatricola:"1261646HH", indexComp:0, stato:"attivo",          data:"2025-08-01" },
+    { componenteMatricola:"1261646HH", indexComp:0, stato:"in_revisione",    data:"2026-08-24" },
+    { componenteMatricola:"9999",      indexComp:1, stato:"in_revisione",    data:"2026-01-01" },
+  ];
+
+  test("conta solo i fermi del componente, non i rientri", () => {
+    const r = riepilogoFermiComponente(stati, { matricola:"1261646HH" }, 0);
+    expect(r.fermi).toBe(3);
+  });
+
+  test("calcola l'arco di anni coperto dallo storico", () => {
+    const r = riepilogoFermiComponente(stati, { matricola:"1261646HH" }, 0);
+    expect(r.anni).toBe(2);
+  });
+
+  test("senza matricola ripiega sull'indice del componente", () => {
+    const r = riepilogoFermiComponente(stati, { matricola:"" }, 1);
+    expect(r.fermi).toBe(1);
+  });
+
+  test("componente mai fermato ritorna zero", () => {
+    expect(riepilogoFermiComponente(stati, { matricola:"0000" }, 7)).toEqual({ fermi:0, anni:0 });
+  });
+
+  test("storico assente non rompe", () => {
+    expect(riepilogoFermiComponente(undefined, { matricola:"x" }, 0)).toEqual({ fermi:0, anni:0 });
   });
 });

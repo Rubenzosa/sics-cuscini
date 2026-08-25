@@ -26,6 +26,19 @@ export function statoLabel(stato) {
   return map[stato] || stato;
 }
 
+// Etichetta corta per la lista kit: nelle righe a altezza fissa
+// "Scade entro 3 mesi" andrebbe a capo su tre righe.
+// Nel dettaglio resta statoLabel per esteso.
+export function statoLabelBreve(stato) {
+  const map = {
+    scaduto: "Scaduto", critico: "Entro 3 mesi",
+    attenzione: "Quest'anno", buono: "Anno prossimo",
+    regolare: "Regolare", fuori_servizio: "Fuori servizio",
+    magazzino: "Magazzino", senza_data: "N/D", fuori_uso: "Fuori uso",
+  };
+  return map[stato] || statoLabel(stato);
+}
+
 export function statoColore(stato) {
   const map = {
     scaduto:      { bg: "#fcebeb", text: "#a32d2d", dot: "#e24b4a" },
@@ -373,6 +386,21 @@ export function patchComponentiRevisioneGT(componenti, dataRevisione, nuovaPross
       ? c
       : { ...c, ultimaRevisione: dataRevisione, prossimaRevisione: nuovaProssima }
   );
+}
+
+// Quante volte questo componente si e fermato, e su quanti anni.
+// Serve a riconoscere il pezzo che da problemi ricorrenti.
+// I record si legano per matricola quando ce, altrimenti per posizione.
+export function riepilogoFermiComponente(stati, comp, index) {
+  const matricola = (comp?.matricola || "").trim();
+  const miei = (stati || []).filter(r =>
+    matricola ? r.componenteMatricola === matricola : r.indexComp === index
+  );
+  const fermi = miei.filter(r => r.stato && r.stato !== "attivo");
+  if (!fermi.length) return { fermi: 0, anni: 0 };
+  const anniRec = miei.map(r => Number(String(r.data || "").slice(0, 4))).filter(Number.isFinite);
+  const anni = anniRec.length ? Math.max(...anniRec) - Math.min(...anniRec) : 0;
+  return { fermi: fermi.length, anni };
 }
 
 export function calcolaStatoGT(gt) {

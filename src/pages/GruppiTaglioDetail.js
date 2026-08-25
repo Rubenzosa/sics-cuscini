@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT, cambiaStatoComponenteGT, getStatiComponentiGT } from "../firebase/service";
-import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso, componenteAttivoGT, componentiNonOperativiGT } from "../utils";
+import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso, componenteAttivoGT, componentiNonOperativiGT, riepilogoFermiComponente } from "../utils";
 import Documenti from "../components/Documenti";
 
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
@@ -129,9 +129,9 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:10, background:badge.bg, color:badge.color }}>{badge.label}</span>
         </div>
         <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <button className="btn btn-secondary" onClick={() => navigate("/calendario")}>📅 Calendario</button>
+          <button className="btn btn-secondary" onClick={() => navigate("/calendario")}>Calendario</button>
           <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
-          <button className="btn btn-secondary" onClick={() => setModalMan(true)}>🔧 Manutenzione</button>
+          <button className="btn btn-secondary" onClick={() => setModalMan(true)}>Manutenzione</button>
           <Link to={`/gruppi-taglio/${gt.id}/modifica`} className="btn btn-secondary">Modifica</Link>
           <button className="btn btn-danger" onClick={handleDelete}>Elimina</button>
         </div>
@@ -140,7 +140,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
       {stato==="fuori_uso" && (
         <div style={{ background:"#1a1a1a", border:"2px solid #e24b4a", borderRadius:"var(--radius-sm)", padding:"14px 18px", marginBottom:16 }}>
           <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-            <span style={{ fontSize:22 }}>⛔</span>
+            <span style={{ width:4, alignSelf:"stretch", borderRadius:4, background:"#e24b4a", flexShrink:0 }}/>
             <div>
               <div style={{ fontWeight:800, fontSize:15, color:"#e24b4a" }}>FUORI USO — dismesso definitivamente</div>
               <div style={{ fontSize:12, color:"#777", marginTop:2 }}>Allegare il documento di notifica qui sotto.</div>
@@ -159,8 +159,8 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           {" · vedi tab Componenti"}
         </div>
       )}
-      {stato==="scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>⚠ Revisione scaduta da {Math.abs(giorni)} giorni</div>}
-      {stato==="critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>⏱ Revisione tra {giorni} giorni — pianifica</div>}
+      {stato==="scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>Revisione scaduta da {Math.abs(giorni)} giorni</div>}
+      {stato==="critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>Revisione tra {giorni} giorni — pianifica</div>}
 
       {/* TABS */}
       <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
@@ -218,12 +218,12 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
                   <div style={{ display:"flex", gap:10, marginTop:6, flexWrap:"wrap" }}>
                     {c.olio && (
                       <span style={{ fontSize:11, fontWeight:700, padding:"2px 10px", borderRadius:10, background:"var(--green-bg)", color:"var(--green-text)" }}>
-                        🛢 {c.olio}
+                        OLIO · {c.olio}
                       </span>
                     )}
                     {c.candela && (
                       <span style={{ fontSize:11, fontWeight:700, padding:"2px 10px", borderRadius:10, background:"var(--amber-bg)", color:"var(--amber-text)" }}>
-                        ⚡ {c.candela}
+                        CANDELA · {c.candela}
                       </span>
                     )}
                   </div>
@@ -257,67 +257,89 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
                   {label} ({items.length})
                 </div>
                 {items.map(c => {
-                  const ri     = (gt.componenti||[]).indexOf(c);
-                  const attivo = componenteAttivoGT(c);
-                  const inRev  = c.statoOperativo === "in_revisione";
-                  const colore = inRev ? "#ba7517" : "#e24b4a";
+                  const ri      = (gt.componenti||[]).indexOf(c);
+                  const attivo  = componenteAttivoGT(c);
+                  const inRev   = c.statoOperativo === "in_revisione";
+                  const storia  = riepilogoFermiComponente(statiComp, c, ri);
+                  const gg      = attivo ? giorniAllaScadenza(c.prossimaRevisione) : null;
+                  const ggClass = gg === null ? "" : gg < 0 ? "bad" : gg <= 90 ? "warn" : "ok";
+                  // La barra laterale segue lo stato operativo; se il componente e' attivo segue la scadenza.
+                  const classe  = !attivo ? (inRev ? "gtc rev" : "gtc ko")
+                    : gg === null ? "gtc" : gg < 0 ? "gtc scad" : gg <= 90 ? "gtc warn" : "gtc";
                   return (
-                    <div key={ri} style={{ background:"var(--bg3)", border:"1px solid var(--border)", borderLeft: attivo ? "1px solid var(--border)" : "3px solid "+colore, borderRadius:"var(--radius-sm)", padding:"12px 14px", marginBottom:8, opacity: attivo ? 1 : 0.75 }}>
-                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
-                        <div style={{ flex:1 }}>
-                          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                            <span style={{ fontWeight:700, fontSize:13, textDecoration: attivo ? "none" : "line-through", color: attivo ? "var(--text)" : "var(--text3)" }}>{c.tipo}</span>
-                            {inRev && <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:"var(--amber-bg)", color:"var(--amber-text)" }}>IN REVISIONE</span>}
-                            {c.statoOperativo==="fuori_servizio" && <span style={{ fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:10, background:"var(--red-bg)", color:"var(--red-text)" }}>FUORI SERVIZIO</span>}
-                          </div>
-                          <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>{c.modello||"—"}</div>
-                          {!attivo && (
-                            <div style={{ fontSize:11, color: inRev ? "var(--amber-text)" : "var(--red-text)", marginTop:4, fontWeight:600 }}>
-                              {inRev ? "In officina dal " : "Fuori servizio dal "}{formatData(c.dataStato)}
-                              {c.motivoStato ? " — "+c.motivoStato : ""}
-                              {c.officina ? " · "+c.officina : ""}
-                              {c.noteStato ? " · "+c.noteStato : ""}
-                            </div>
-                          )}
-                          <div style={{ display:"flex", gap:8, marginTop:6, flexWrap:"wrap" }}>
-                            {c.olio && <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--green-bg)", color:"var(--green-text)" }}>🛢 {c.olio}</span>}
-                            {c.candela && <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--amber-bg)", color:"var(--amber-text)" }}>⚡ {c.candela}</span>}
-                            {c.statoComp && c.statoComp!=="Ottimo" && (
-                              <span style={{ fontSize:10, fontWeight:700, padding:"1px 8px", borderRadius:8, background:"var(--red-bg)", color:"var(--red-text)" }}>{c.statoComp}</span>
-                            )}
-                          </div>
+                    <div key={ri} className={classe}>
+                      <div className="gtc-top">
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div className={attivo ? "gtc-tipo" : "gtc-tipo spenta"}>{c.tipo}</div>
+                          <div className="gtc-mod">{c.modello||"—"}</div>
+                          {inRev && <span className="gtc-stato rev"><span className="gtc-dot puls"/>In revisione</span>}
+                          {c.statoOperativo==="fuori_servizio" && <span className="gtc-stato ko"><span className="gtc-dot"/>Fuori servizio</span>}
                         </div>
-                        <div style={{ textAlign:"right", minWidth:140 }}>
-                          {c.pressione && <div style={{ fontSize:11, fontWeight:700, color:"var(--text2)" }}>{c.pressione}</div>}
-                          {c.matricola && <div className="mono" style={{ marginTop:2 }}>{c.matricola}</div>}
-                          <div style={{ fontSize:10, color:"var(--text3)", marginTop:4 }}>
-                            Anno: {c.annoComp||"—"}
-                          </div>
-                          {c.prossimaRevisione && c.prossimaRevisione!=="NO REVISIONE" && (
-                            <div style={{ fontSize:10, color:"var(--text3)", marginTop:2 }}>
-                              Rev: {formatData(c.prossimaRevisione)}
-                            </div>
-                          )}
-                          {c.prossimaRevisione==="NO REVISIONE" && (
-                            <div style={{ fontSize:10, color:"var(--green-text)", fontWeight:700, marginTop:2 }}>No revisione</div>
-                          )}
+                        <div className="gtc-targa">
+                          <span className="gtc-targa-lbl">Matricola</span>
+                          <span className="gtc-targa-val">{c.matricola || "n.d."}</span>
+                          <span className="gtc-targa-sub">
+                            {c.annoComp || "—"}{c.pressione ? " · " + c.pressione.toLowerCase() : ""}
+                          </span>
                         </div>
                       </div>
-                      <div style={{ display:"flex", justifyContent:"flex-end", gap:8, marginTop:10, flexWrap:"wrap" }}>
-                        {attivo ? (
-                          <>
-                            <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--amber-text)", borderColor:"#fac775", background:"var(--amber-bg)" }} onClick={() => apriStato(ri, "in_revisione")}>
-                              Manda in revisione
-                            </button>
-                            <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--red-text)", borderColor:"#e8a3a3", background:"var(--red-bg)" }} onClick={() => apriStato(ri, "fuori_servizio")}>
-                              Metti fuori servizio
-                            </button>
-                          </>
-                        ) : (
-                          <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--green-text)", borderColor:"#a8c98a", background:"var(--green-bg)", fontWeight:700 }} onClick={() => apriStato(ri, "attivo")}>
-                            Rimetti in servizio
-                          </button>
+
+                      {!attivo && (
+                        <div className={inRev ? "gtc-fermo rev" : "gtc-fermo ko"}>
+                          <span className="gtc-fermo-k">{inRev ? "In officina dal" : "Fermo dal"} {formatData(c.dataStato)}</span>
+                          <b>{c.motivoStato || "motivo non indicato"}</b>
+                          {c.officina ? " — " + c.officina : ""}
+                          {c.noteStato ? " · " + c.noteStato : ""}
+                        </div>
+                      )}
+
+                      <div className="gtc-specs">
+                        {c.olio && <span className="gtc-spec"><span className="gtc-spec-k">Olio</span><span className="gtc-spec-v">{c.olio}</span></span>}
+                        {c.candela && <span className="gtc-spec"><span className="gtc-spec-k">Candela</span><span className="gtc-spec-v">{c.candela}</span></span>}
+                        {c.statoComp && c.statoComp!=="Ottimo" && (
+                          <span className="gtc-spec bad"><span className="gtc-spec-k">Stato</span><span className="gtc-spec-v">{c.statoComp}</span></span>
                         )}
+                        {storia.fermi > 0 && (
+                          <span className="gtc-spec warn">
+                            <span className="gtc-spec-k">Fermi</span>
+                            <span className="gtc-spec-v">
+                              {storia.fermi === 1 ? "1 fermo" : storia.fermi + " fermi"}
+                              {storia.anni >= 1 ? " in " + storia.anni + (storia.anni === 1 ? " anno" : " anni") : ""}
+                            </span>
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="gtc-foot">
+                        <div className="gtc-scad">
+                          {!attivo ? (
+                            <span className="gtc-scad-off">Escluso dalla scadenza del kit</span>
+                          ) : c.prossimaRevisione === "NO REVISIONE" ? (
+                            <span className="gtc-scad-off">Nessuna revisione prevista</span>
+                          ) : c.prossimaRevisione ? (
+                            <>
+                              <span className="gtc-scad-k">Revisione</span>
+                              <span className="gtc-scad-v">{formatData(c.prossimaRevisione)}</span>
+                              {gg !== null && (
+                                <span className={"gtc-scad-gg " + ggClass}>
+                                  {gg < 0 ? "scaduta da " + Math.abs(gg) + " gg" : "fra " + gg + " gg"}
+                                </span>
+                              )}
+                            </>
+                          ) : (
+                            <span className="gtc-scad-off">Scadenza non registrata</span>
+                          )}
+                        </div>
+                        <div className="gtc-acts">
+                          {attivo ? (
+                            <>
+                              <button className="gtc-btn rev" onClick={() => apriStato(ri, "in_revisione")}>In revisione</button>
+                              <button className="gtc-btn ko" onClick={() => apriStato(ri, "fuori_servizio")}>Fuori servizio</button>
+                            </>
+                          ) : (
+                            <button className="gtc-btn go" onClick={() => apriStato(ri, "attivo")}>Rimetti in servizio</button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );

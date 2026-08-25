@@ -111,16 +111,28 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
       {/* Lista accordion */}
       {!filtrati.length ? (
         <div style={{ textAlign: "center", padding: 40, color: "var(--text3)", fontSize: 14 }}>Nessun kit trovato.</div>
-      ) : filtrati.map(it => {
-        const st = calcStato(it);
-        const scad = scadDi(it);
-        return (
-          <KitAccordion key={it.id} item={it} sistema={sistema}
-            stato={st} giorni={giorniAllaScadenza(scad)} scad={scad}
-            open={openId === it.id}
-            onToggle={() => setOpenId(openId === it.id ? null : it.id)} />
-        );
-      })}
+      ) : (
+        <div className="reg">
+          <div className="reg-head reg-cols">
+            <span className="reg-h">Kit</span>
+            <span className="reg-h">Mezzo</span>
+            <span className="reg-h">Dislocazione</span>
+            <span className="reg-h r">Revisione</span>
+            <span className="reg-h r">Stato</span>
+            <span/>
+          </div>
+          {filtrati.map(it => {
+            const st = calcStato(it);
+            const scad = scadDi(it);
+            return (
+              <KitAccordion key={it.id} item={it} sistema={sistema}
+                stato={st} giorni={giorniAllaScadenza(scad)} scad={scad}
+                open={openId === it.id}
+                onToggle={() => setOpenId(openId === it.id ? null : it.id)} />
+            );
+          })}
+        </div>
+      )}
 
       {/* Fuori uso — sezione a parte, comprimibile */}
       {fuoriUso.length > 0 && (

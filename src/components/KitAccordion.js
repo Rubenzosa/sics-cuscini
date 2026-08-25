@@ -1,20 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
-import Ring from "./Ring";
-import { statoLabel, formatData, componentiFuoriUso, componentiNonOperativiGT, componenteAttivoGT } from "../utils";
-
-const BORDER = {
-  scaduto: "var(--red)", critico: "var(--red)", attenzione: "var(--amber)",
-  buono: "var(--green)", regolare: "var(--green)",
-};
+import { statoLabel, statoLabelBreve, formatData, componentiFuoriUso, componentiNonOperativiGT, componenteAttivoGT } from "../utils";
 
 export default function KitAccordion({ item, sistema, stato, giorni, scad, open, onToggle }) {
   const isTaglio = sistema === "taglio";
-  const borderColor = BORDER[stato] || "var(--border)";
   const detailPath = isTaglio ? `/gruppi-taglio/${item.id}` : `/kit/${item.id}`;
-  const info = isTaglio
-    ? `${item.sistema || ""}${item.marca ? " · " + item.marca : ""} · ${item.dislocazione || ""}`
-    : `${item.bar} bar · ${item.dislocazione || ""}`;
   const comps = item.componenti || [];
   // Cuscini: componenti marcati fuoriUso. Taglio: componenti in revisione o fuori servizio.
   const nFU = isTaglio ? componentiNonOperativiGT(item).totale : componentiFuoriUso(item);
@@ -22,35 +12,43 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
     ? nFU + " componente/i fermo/i (in revisione o fuori servizio)"
     : nFU + " componente/i fuori uso da sostituire";
 
+  // Tono cromatico condiviso da barra, giorni e pastiglia.
+  const TONO = { scaduto:"b", critico:"b", attenzione:"w", buono:"ok", regolare:"ok" };
+  const tono = TONO[stato] || "n";
+  const marca = isTaglio ? item.marca : (item.bar ? item.bar + " bar" : "");
+
   return (
-    <div className="card" style={{ padding: 0, marginBottom: 12, borderLeft: `4px solid ${borderColor}`, overflow: "hidden" }}>
-      <button onClick={onToggle} style={{
-        display: "flex", alignItems: "center", gap: 14, padding: "14px 18px",
-        width: "100%", background: "none", border: "none", font: "inherit",
-        textAlign: "left", color: "inherit", cursor: "pointer",
-      }}>
-        <span style={{ fontSize: 28, fontWeight: 900, color: "var(--accent)", lineHeight: 1, minWidth: 44 }}>{item.numero}</span>
-        <span style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
-          <span style={{ display: "block", fontWeight: 700, fontSize: 15, overflowWrap: "anywhere", wordBreak: "break-word" }}>{item.nome}</span>
-          <span style={{ display: "block", fontSize: 12, color: "var(--text3)", fontFamily: "monospace", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{item.mezzo}</span>
-          <span style={{ display: "block", fontSize: 11, color: "var(--text2)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{info}</span>
+    <div className="reg-item">
+      <button onClick={onToggle} className={open ? "reg-row reg-cols open" : "reg-row reg-cols"}>
+        <span className={`reg-bar ${tono}`}/>
+        <span className="reg-num">{item.numero}</span>
+        <span className="reg-mid">
+          <span className="reg-nome">
+            {item.nome}
+            {nFU > 0 && <span className="reg-warn" title={titoloFU}>−{nFU} comp.</span>}
+          </span>
+          <span className="reg-sub">
+            {item.mezzo || "—"}
+            {marca && <span className="reg-marca"> · {marca}</span>}
+          </span>
         </span>
-        <Ring giorni={giorni} stato={stato} />
-        {nFU > 0 && (
-          <span title={titoloFU} style={{
-            fontSize: 11, fontWeight: 800, padding: "3px 9px", borderRadius: 12,
-            background: "var(--amber-bg)", color: "var(--amber-text)", whiteSpace: "nowrap", flexShrink: 0,
-          }}>−{nFU} comp.</span>
-        )}
-        <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
-        <span style={{
-          width: 9, height: 9, borderRight: "2px solid var(--text3)", borderBottom: "2px solid var(--text3)",
-          transform: open ? "rotate(-135deg)" : "rotate(45deg)", transition: "transform .3s", flexShrink: 0,
-        }} />
+        <span className="reg-loc">{item.dislocazione || "—"}</span>
+        <span className="reg-scad">
+          <span className="reg-data">{scad && scad !== "NO REVISIONE" ? formatData(scad) : "—"}</span>
+          <span className={`reg-gg ${tono}`}>
+            {giorni === null || giorni === undefined
+              ? (scad === "NO REVISIONE" ? "no revisione" : "senza data")
+              : giorni < 0 ? `${Math.abs(giorni)} gg fa` : `fra ${giorni} gg`}
+          </span>
+        </span>
+        <span className="reg-stato">
+          <span className={`reg-chip ${tono}`}><span className="reg-dot"/>{statoLabelBreve(stato)}</span>
+        </span>
+        <span className="reg-chev"/>
       </button>
 
       {open && (
-        <div style={{ padding: "0 18px 18px" }}>
+        <div className="reg-panel">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2,1fr)", gap: 8, marginBottom: 14 }}>
             <Field label="Mezzo" value={item.mezzo || "—"} />
             <Field label="Dislocazione" value={item.dislocazione || "—"} />
