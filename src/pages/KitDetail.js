@@ -309,50 +309,71 @@ export default function KitDetail({ kits, reload }) {
         <div className="card">
           <div className="card-header">
             <span className="card-title">Componenti ({kit.componenti?.length||0})</span>
-            <span style={{ fontSize:11, color:"var(--text3)" }}>Matricola Lucca in blu · ⇄ per sostituire</span>
+            <span style={{ fontSize:11, color:"var(--text3)" }}>La matricola Lucca è quella incisa sul cuscino</span>
           </div>
           {gruppi.map(({ titolo, items }) => {
             if (!items.length) return null;
             return (
               <div key={titolo} style={{ marginBottom:20 }}>
                 <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>{titolo} ({items.length})</div>
-                <div className="comp-list">
-                  {items.map(c => {
-                    const ri = (kit.componenti||[]).indexOf(c);
-                    return (
-                      <div key={ri} className="comp-item" style={{ flexDirection:"column", alignItems:"stretch", gap:8, opacity: c.fuoriUso ? 0.65 : 1, borderLeft: c.fuoriUso ? "3px solid var(--amber)" : undefined }}>
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                          <div style={{ flex:1 }}>
-                            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                              <span className="comp-tipo" style={c.fuoriUso ? { textDecoration:"line-through", color:"var(--text3)" } : undefined}>{c.tipo}</span>
-                              {c.fuoriUso && <span style={{ fontSize:10, background:"var(--amber-bg)", color:"var(--amber-text)", padding:"2px 7px", borderRadius:10, fontWeight:700 }}>FUORI USO — da sostituire</span>}
-                              {c.note && <span style={{ fontSize:10, background:"var(--red-bg)", color:"var(--red-text)", padding:"2px 7px", borderRadius:10, fontWeight:700 }}>{c.note}</span>}
-                            </div>
-                            <div className="comp-modello">{c.modello||"—"}</div>
-                            {c.dataInizioServizio && <div style={{ fontSize:10, color:"var(--text3)", marginTop:2 }}>In servizio: {formatData(c.dataInizioServizio)}</div>}
-                            {c.fuoriUso && <div style={{ fontSize:10, color:"var(--amber-text)", marginTop:2 }}>Fuori uso dal {formatData(c.dataFuoriUso)}{c.noteFuoriUso ? ` — ${c.noteFuoriUso}` : ""}</div>}
-                          </div>
-                          <div style={{ textAlign:"right", minWidth:150 }}>
-                            {c.matricolaLucca && <div style={{ fontFamily:"monospace", fontWeight:800, fontSize:12, color:"var(--blue-text)", background:"var(--blue-bg)", padding:"3px 10px", borderRadius:6, display:"inline-block", marginBottom:4 }}>{c.matricolaLucca}</div>}
-                            {c.vecchio_codice && c.vecchio_codice !== c.matricolaLucca && <div style={{ fontFamily:"monospace", fontSize:10, color:"var(--text3)", textDecoration:"line-through", marginBottom:4 }}>{c.vecchio_codice}</div>}
-                            <div className="mono">{c.matricola||"—"}</div>
-                            <div style={{ fontSize:10, color:"var(--text3)" }}>{c.bar} bar</div>
-                          </div>
+                {items.map(c => {
+                  const ri = (kit.componenti||[]).indexOf(c);
+                  return (
+                    <div key={ri} className={c.fuoriUso ? "gtc rev" : "gtc"}>
+                      <div className="gtc-top">
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div className={c.fuoriUso ? "gtc-tipo spenta" : "gtc-tipo"}>{c.tipo}</div>
+                          <div className="gtc-mod">{c.modello||"—"}</div>
+                          {c.fuoriUso && <span className="gtc-stato rev"><span className="gtc-dot puls"/>Fuori uso</span>}
                         </div>
-                        <div style={{ display:"flex", justifyContent:"flex-end", gap:8 }}>
+                        <div className="gtc-targa">
+                          <span className="gtc-targa-lbl">Matricola Lucca</span>
+                          <span className="gtc-targa-val">{c.matricolaLucca || "n.d."}</span>
+                          <span className="gtc-targa-sub">
+                            {c.matricola || "senza matricola"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {c.fuoriUso && (
+                        <div className="gtc-fermo rev">
+                          <span className="gtc-fermo-k">Fuori uso dal {formatData(c.dataFuoriUso)}</span>
+                          <b>{c.noteFuoriUso || "motivo non indicato"}</b>
+                          {" — in attesa di sostituzione"}
+                        </div>
+                      )}
+
+                      <div className="gtc-specs">
+                        {c.bar && <span className="gtc-spec"><span className="gtc-spec-k">Pressione</span><span className="gtc-spec-v">{c.bar} bar</span></span>}
+                        {c.dataInizioServizio && (
+                          <span className="gtc-spec"><span className="gtc-spec-k">In servizio</span><span className="gtc-spec-v">{formatData(c.dataInizioServizio)}</span></span>
+                        )}
+                        {c.vecchio_codice && c.vecchio_codice !== c.matricolaLucca && (
+                          <span className="gtc-spec"><span className="gtc-spec-k">Vecchio codice</span><span className="gtc-spec-v" style={{ textDecoration:"line-through", color:"var(--text3)" }}>{c.vecchio_codice}</span></span>
+                        )}
+                        {c.note && <span className="gtc-spec bad"><span className="gtc-spec-k">Nota</span><span className="gtc-spec-v">{c.note}</span></span>}
+                      </div>
+
+                      <div className="gtc-foot">
+                        <div className="gtc-scad">
+                          {c.fuoriUso
+                            ? <span className="gtc-scad-off">Il kit resta revisionato ma incompleto</span>
+                            : <span className="gtc-scad-off">In servizio</span>}
+                        </div>
+                        <div className="gtc-acts">
                           {!c.fuoriUso && (
-                            <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--text3)", borderColor:"var(--border2)", background:"var(--bg2)" }} onClick={() => { setModalFuoriUso(ri); setNoteFU(""); }}>
+                            <button className="gtc-btn rev" onClick={() => { setModalFuoriUso(ri); setNoteFU(""); }}>
                               Metti fuori uso
                             </button>
                           )}
-                          <button className="btn" style={{ fontSize:11, padding:"4px 12px", color:"var(--amber-text)", borderColor:"#fac775", background:"var(--amber-bg)", fontWeight: c.fuoriUso ? 700 : undefined }} onClick={() => apriSostituisci(ri)}>
-                            ⇄ Sostituisci{c.fuoriUso ? " ora" : ""}
+                          <button className={c.fuoriUso ? "gtc-btn go" : "gtc-btn"} onClick={() => apriSostituisci(ri)}>
+                            Sostituisci{c.fuoriUso ? " ora" : ""}
                           </button>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
             );
           })}

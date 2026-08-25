@@ -1,11 +1,17 @@
 // ═══════════════════════════════════════════════════
 // SICS Service Worker — PWA offline support
 // ═══════════════════════════════════════════════════
-const CACHE_NAME = "sics-v2";
+const CACHE_NAME = "sics-v3";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
   "/logo78.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/icon-maskable-192.png",
+  "/icon-maskable-512.png",
+  "/apple-touch-icon.png",
+  "/favicon-32.png",
   "/manifest.json",
 ];
 
