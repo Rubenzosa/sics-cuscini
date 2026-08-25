@@ -12,11 +12,131 @@
     <link rel="apple-touch-icon" sizes="180x180" href="%PUBLIC_URL%/apple-touch-icon.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="%PUBLIC_URL%/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="%PUBLIC_URL%/favicon-16.png" />
+    <link rel="preload" as="image" href="%PUBLIC_URL%/logo78.png" />
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
     <title>SICS — Cuscini di Sollevamento</title>
+    <style>
+      /* ═══ SPLASH DI APERTURA ═══ */
+      #sics-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 99999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6vh;
+        background: #05080d;
+        background-image:
+          radial-gradient(circle at 50% 42%, #1b2434 0%, #0b1018 45%, #05080d 100%);
+        opacity: 1;
+        transition: opacity .55s ease, visibility .55s ease;
+      }
+      #sics-splash.sics-splash-out {
+        opacity: 0;
+        visibility: hidden;
+        pointer-events: none;
+      }
+
+      /* alone luminoso dietro al logo */
+      .sics-splash-halo {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .sics-splash-halo::before {
+        content: "";
+        position: absolute;
+        width: 130%;
+        height: 130%;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(92,107,192,.30) 0%, rgba(92,107,192,0) 65%);
+        animation: sics-halo 3.2s ease-in-out infinite;
+      }
+      @keyframes sics-halo {
+        0%, 100% { transform: scale(.92); opacity: .55; }
+        50%      { transform: scale(1.10); opacity: 1; }
+      }
+
+      #sics-splash img {
+        position: relative;
+        width: min(86vw, 640px);
+        max-height: 58vh;
+        object-fit: contain;
+        /* il logo e' a tratto nero: invertito diventa bianco sul fondo scuro */
+        filter: invert(1) drop-shadow(0 0 30px rgba(122,140,220,.55));
+        transform: scale(.86);
+        opacity: 0;
+        animation: sics-logo-in .95s cubic-bezier(.16,.9,.3,1) forwards;
+      }
+      @keyframes sics-logo-in {
+        0%   { opacity: 0; transform: scale(.86); }
+        100% { opacity: 1; transform: scale(1); }
+      }
+
+      .sics-splash-foot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 18px;
+        opacity: 0;
+        animation: sics-fade-in .7s ease .55s forwards;
+      }
+      @keyframes sics-fade-in { to { opacity: 1; } }
+
+      .sics-splash-title {
+        font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+        font-size: 13px;
+        font-weight: 600;
+        letter-spacing: .34em;
+        text-transform: uppercase;
+        color: #8fa0bd;
+        text-indent: .34em;
+      }
+
+      /* barra di caricamento */
+      .sics-splash-bar {
+        width: min(56vw, 240px);
+        height: 3px;
+        border-radius: 3px;
+        background: rgba(143,160,189,.18);
+        overflow: hidden;
+      }
+      .sics-splash-bar > i {
+        display: block;
+        height: 100%;
+        width: 0;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #5c6bc0 0%, #7986cb 55%, #f9a825 100%);
+        box-shadow: 0 0 10px rgba(92,107,192,.7);
+        animation: sics-bar 2.0s cubic-bezier(.4,.05,.2,1) .5s forwards;
+      }
+      @keyframes sics-bar {
+        0%   { width: 0; }
+        55%  { width: 62%; }
+        100% { width: 100%; }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #sics-splash img,
+        .sics-splash-foot { animation: none; opacity: 1; transform: none; }
+        .sics-splash-halo::before { animation: none; }
+        .sics-splash-bar > i { animation: none; width: 100%; }
+      }
+    </style>
   </head>
   <body>
     <noscript>Abilita JavaScript per utilizzare questa applicazione.</noscript>
     <div id="root"></div>
+    <div id="sics-splash">
+      <div class="sics-splash-halo">
+        <img src="%PUBLIC_URL%/logo78.png" alt="SICS — VVF Siena" />
+      </div>
+      <div class="sics-splash-foot">
+        <div class="sics-splash-title">SICS &middot; VVF Siena</div>
+        <div class="sics-splash-bar"><i></i></div>
+      </div>
+    </div>
   </body>
 </html>
