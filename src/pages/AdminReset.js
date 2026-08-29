@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import { db } from "../firebase/config";
 import { collection, getDocs, deleteDoc, doc, setDoc } from "firebase/firestore";
 import { gruppiTaglioData } from "../data/gruppiTaglioData";
+import { kitData } from "../data/kitData";
 
 // Sceglie il documento da CONSERVARE tra i doppioni dello stesso numero:
 // 1) quello con revisione più recente (dati reali), 2) id "seed" (senza timestamp), 3) id minore.
@@ -23,6 +24,7 @@ export default function AdminReset() {
   const [running, setRunning] = useState(false);
   const [piano, setPiano] = useState(null); // { gruppi:[{numero, keep, elimina:[...]}], totElimina }
   const [dedupRun, setDedupRun] = useState(false);
+  const [seedRun, setSeedRun]   = useState(false);
 
   function addLog(msg) {
     setLog(prev => [...prev, msg]);
@@ -77,6 +79,10 @@ export default function AdminReset() {
   }
 
   async function resetGT() {
+    if (!window.confirm(
+      "Cancella TUTTI i gruppi da taglio su Firestore e li riscrive dal file locale.\n" +
+      "Revisioni registrate e stati dei componenti andranno persi.\n\nProcedere?"
+    )) return;
     setRunning(true);
     setLog([]);
     try {
@@ -102,6 +108,38 @@ export default function AdminReset() {
       addLog(`ERRORE: ${e.message}`);
     }
     setRunning(false);
+  }
+
+  // Seed iniziale cuscini: era automatico all'avvio dell'app e una lettura
+  // offline (0 documenti dalla cache vuota) faceva ripartire il seed sopra i
+  // dati reali. Ora e' manuale e si rifiuta di scrivere se la collection non
+  // e' vuota, cosi' non puo' sovrascrivere niente.
+  async function seedCuscini() {
+    setSeedRun(true);
+    setLog([]);
+    try {
+      addLog("Verifica collection kits...");
+      const snap = await getDocs(collection(db, "kits"));
+      if (snap.docs.length > 0) {
+        addLog(`ANNULLATO — la collection contiene gia' ${snap.docs.length} kit. Il seed scrive solo su database vuoto.`);
+        setSeedRun(false);
+        return;
+      }
+      if (!window.confirm(`Scrivere i ${kitData.length} kit cuscini del file locale su un database vuoto?`)) {
+        addLog("Annullato dall'utente.");
+        setSeedRun(false);
+        return;
+      }
+      for (const kit of kitData) {
+        const { id, ...data } = kit;
+        await setDoc(doc(db, "kits", id), data);
+        addLog(`   Scritto: ${id} (Kit ${data.numero} — ${data.nome})`);
+      }
+      addLog(`✓ DONE — ${kitData.length} kit scritti.`);
+    } catch (e) {
+      addLog(`ERRORE: ${e.message}`);
+    }
+    setSeedRun(false);
   }
 
   return (
@@ -196,6 +234,24 @@ export default function AdminReset() {
             )}
           </div>
         )}
+      </div>
+
+      <div style={{ borderTop: "1px solid var(--border, #ddd)", marginTop: 24, paddingTop: 20, marginBottom: 24 }}>
+        <h2 style={{ fontSize: 17, fontWeight: 800, marginBottom: 6 }}>Seed iniziale cuscini</h2>
+        <p style={{ fontSize: 13, color: "var(--text2)", marginBottom: 14 }}>
+          Scrive i {kitData.length} kit cuscini del file locale <b>solo se la collection e' vuota</b>.
+          Serve a ripopolare un database azzerato: non sovrascrive dati esistenti.
+        </p>
+        <button
+          onClick={seedCuscini}
+          disabled={seedRun}
+          style={{
+            background: seedRun ? "#999" : "#185fa5", color: "#fff", border: "none",
+            borderRadius: 8, padding: "10px 24px", fontSize: 14, fontWeight: 700,
+            cursor: seedRun ? "not-allowed" : "pointer",
+          }}>
+          {seedRun ? "Attendere..." : "Scrivi seed cuscini"}
+        </button>
       </div>
 
       {log.length > 0 && (

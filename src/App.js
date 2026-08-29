@@ -14,9 +14,7 @@ import AdminReset from "./pages/AdminReset";
 import Rinumerazione from "./pages/Rinumerazione";
 
 // Firebase
-import { getAllKits, seedDatabase, cercaGlobale, getAllGruppiTaglio, seedGruppiTaglio, resetAndSeedGruppiTaglio } from "./firebase/service";
-import { kitData } from "./data/kitData";
-import { gruppiTaglioData } from "./data/gruppiTaglioData";
+import { getAllKits, cercaGlobale, getAllGruppiTaglio } from "./firebase/service";
 import { calcolaStato, calcolaStatoGT } from "./utils";
 import "./App.css";
 
@@ -149,7 +147,6 @@ export default function App() {
   const [kits, setKits]                 = useState([]);
   const [gruppiTaglio, setGruppiTaglio] = useState([]);
   const [loading, setLoading]           = useState(true);
-  const [seeded, setSeeded]             = useState(false);
   const [darkMode, setDarkMode]         = useState(() => localStorage.getItem("theme") === "dark");
   const [sistema, setSistema]           = useState(() => localStorage.getItem("sistema") || "cuscini");
 
@@ -163,19 +160,19 @@ export default function App() {
     localStorage.setItem("sistema", sistema);
   }, [sistema]);
 
+  // NIENTE SEED AUTOMATICO QUI.
+  // Una lettura che torna 0 documenti non significa "database vuoto": con la
+  // PWA installata l'avvio senza rete risolve dalla cache locale vuota e
+  // restituisce 0 documenti senza errore. Il seed automatico che ne seguiva
+  // riscriveva Firestore col file locale (setDoc = sovrascrittura totale),
+  // cancellando revisioni e stati dei componenti reali (25/08/2026 15:40).
+  // Il seed resta disponibile solo come azione manuale in /admin-reset.
   const loadAll = useCallback(async () => {
     const [data, gtData] = await Promise.all([getAllKits(), getAllGruppiTaglio()]);
-    if (data.length === 0 && !seeded) {
-      await seedDatabase(kitData);
-      setSeeded(true);
-      setKits(await getAllKits());
-    } else { setKits(data); }
-    if (gtData.length === 0) {
-      await seedGruppiTaglio(gruppiTaglioData);
-      setGruppiTaglio(await getAllGruppiTaglio());
-    } else { setGruppiTaglio(gtData); }
+    setKits(data);
+    setGruppiTaglio(gtData);
     setLoading(false);
-  }, [seeded]);
+  }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 

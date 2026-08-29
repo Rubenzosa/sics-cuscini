@@ -22,8 +22,11 @@ export const gruppiTaglioData = [
   },
 
   // ── KIT 18/21 · APS ACTROS · VF 24491 ─────────────────────
+  // id "gt-aps-actros": e' il documento storico su Firestore, quello a cui
+  // puntano i record di gt_revisioni. Un seed con id diverso non lo
+  // sovrascrive, lo affianca: e' cosi' che era nato il doppione "gt-18-21".
   {
-    id:"gt-18-21", numero:"18/21", nome:"APS ACTROS", mezzo:"VF 24491",
+    id:"gt-aps-actros", numero:"18/21", nome:"APS ACTROS", mezzo:"VF 24491",
     tipoMezzo:"APS ACTROS", dislocazione:"Sede Centrale", annoAcquisto:2006,
     sistema:"oleodinamico", marca:"LUKAS", stato:"attivo",
     componenti:[
