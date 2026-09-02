@@ -4,10 +4,12 @@ import {
   deleteKit, sostituisciComponente, getStoricoSostituzioni,
   aggiungiRevisione, getRevisioni, spostaKit, getStoricoSpostamenti,
   uploadAllegato, getAllegatiKit, deleteAllegato, mettiComponenteFuoriUso,
-  eliminaVecchioCodice,
+  eliminaVecchioCodice, getFotoComponenti,
 } from "../firebase/service";
 import { calcolaStato, statoLabel, formatData, giorniAllaScadenza, componentiFuoriUso, oggiIso } from "../utils";
+import { fotoDelComponente } from "../foto";
 import Documenti from "../components/Documenti";
+import FotoComponente from "../components/FotoComponente";
 import { suggerisciMatricola } from "../numerazione";
 
 const TIPI_COMP = ["CUSCINO 30X30","CUSCINO 35X35","CUSCINO 37X37","CUSCINO 38X38","CUSCINO 40X40","CUSCINO 45X45","CUSCINO 47X52","CUSCINO 48X58","CUSCINO 50X50","CUSCINO 55X55","CUSCINO 60X60","CUSCINO 65X65","CUSCINO 100X32","CENTRALINA","RIDUTTORE","TUBO","TUBO 2MT","TUBO 5MT","RUB. VALVOLARE"];
@@ -128,6 +130,7 @@ export default function KitDetail({ kits, reload }) {
   const [storicoSost, setStoricoSost] = useState([]);
   const [revisioni, setRevisioni] = useState([]);
   const [storicoSpost, setStoricoSpost] = useState([]);
+  const [fotoComp, setFotoComp] = useState([]);
 
   const [nuovoComp, setNuovoComp] = useState({ tipo:"", modello:"", matricola:"", bar:8, matricolaLucca:"", dataInizioServizio: oggiIso(), dataRevisione:"", note:"" });
   const [destComp, setDestComp] = useState("fuori_uso");
@@ -141,7 +144,10 @@ export default function KitDetail({ kits, reload }) {
     getStoricoSostituzioni(kit.id).then(setStoricoSost);
     getRevisioni(kit.id).then(setRevisioni);
     getStoricoSpostamenti(kit.id).then(setStoricoSpost);
+    getFotoComponenti(kit.id).then(setFotoComp);
   }, [kit]);
+
+  const ricaricaFoto = () => kit && getFotoComponenti(kit.id).then(setFotoComp);
 
   if (!kit) return (
     <div style={{ textAlign:"center", padding:60, color:"var(--text3)" }}>
@@ -303,6 +309,13 @@ export default function KitDetail({ kits, reload }) {
                   return (
                     <div key={ri} className={c.fuoriUso ? "gtc rev" : "gtc"}>
                       <div className="gtc-top">
+                        <FotoComponente
+                          entitaId={kit.id}
+                          compIndex={ri}
+                          comp={c}
+                          foto={fotoDelComponente(fotoComp, ri)}
+                          onChange={ricaricaFoto}
+                        />
                         <div style={{ flex:1, minWidth:0 }}>
                           <div className={c.fuoriUso ? "gtc-tipo spenta" : "gtc-tipo"}>{c.tipo}</div>
                           <div className="gtc-mod">{c.modello||"—"}</div>

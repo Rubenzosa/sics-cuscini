@@ -1,9 +1,11 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT, cambiaStatoComponenteGT, getStatiComponentiGT } from "../firebase/service";
+import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT, cambiaStatoComponenteGT, getStatiComponentiGT, getFotoComponenti } from "../firebase/service";
 import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso, componenteAttivoGT, componentiNonOperativiGT, riepilogoFermiComponente } from "../utils";
+import { fotoDelComponente } from "../foto";
 import Documenti from "../components/Documenti";
+import FotoComponente from "../components/FotoComponente";
 
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
 
@@ -33,6 +35,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const [modalMan, setModalMan]   = useState(false);
   const [saving, setSaving]       = useState(false);
   const [statiComp, setStatiComp] = useState([]);
+  const [fotoComp, setFotoComp] = useState([]);
   const [modalStato, setModalStato] = useState(null); // { index, stato }
   const [formStato, setFormStato]   = useState({ motivo:"", note:"", data: oggiIso(), officina:"", revisioneEseguita:false, intervalloAnni:"" });
 
@@ -44,7 +47,10 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
     getRevisioniGT(gt.id).then(setRevisioni);
     getManutenzioniGT(gt.id).then(setManutenzioni);
     getStatiComponentiGT(gt.id).then(setStatiComp);
+    getFotoComponenti(gt.id).then(setFotoComp);
   }, [gt]);
+
+  const ricaricaFoto = () => gt && getFotoComponenti(gt.id).then(setFotoComp);
 
   if (!gt) return (
     <div style={{ textAlign:"center", padding:60, color:"var(--text3)" }}>
@@ -269,6 +275,13 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
                   return (
                     <div key={ri} className={classe}>
                       <div className="gtc-top">
+                        <FotoComponente
+                          entitaId={gt.id}
+                          compIndex={ri}
+                          comp={c}
+                          foto={fotoDelComponente(fotoComp, ri)}
+                          onChange={ricaricaFoto}
+                        />
                         <div style={{ flex:1, minWidth:0 }}>
                           <div className={attivo ? "gtc-tipo" : "gtc-tipo spenta"}>{c.tipo}</div>
                           <div className="gtc-mod">{c.modello||"—"}</div>

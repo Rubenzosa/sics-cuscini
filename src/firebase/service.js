@@ -1,6 +1,6 @@
 import { db, storage } from "./config";
 import {
-  collection, doc, getDocs, getDoc,
+  collection, doc, getDocs, getDoc, query, where,
   updateDoc, deleteDoc, setDoc, addDoc, serverTimestamp
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
@@ -469,6 +469,8 @@ export async function deletePromemoria(id) {
 
 // ─── ALLEGATI FUORI USO (Firebase Storage + Firestore metadata) ──────────────
 const ALLEGATI = "allegati_kit";
+// Collezione Firestore per le foto dei singoli componenti (data URI inline).
+const FOTO_COMPONENTI = "foto_componenti";
 
 export async function uploadAllegato(kitId, file) {
   const path = `allegati/${kitId}/${Date.now()}_${file.name}`;
@@ -500,6 +502,42 @@ export async function deleteAllegato(allegatoId, path) {
     try { await deleteObject(ref(storage, path)); } catch (e) {}
   }
   await deleteDoc(doc(db, ALLEGATI, allegatoId));
+}
+
+// ─── FOTO DEI SINGOLI COMPONENTI (kit e gruppi taglio) ───────────────────────
+// La foto (gia' rimpicciolita a data URI da src/foto.js) sta DENTRO Firestore,
+// non in Storage: collezione dedicata FOTO_COMPONENTI, una riga per foto.
+// entitaId = id kit oppure id gruppo taglio. Una sola foto per componente.
+// Nota: FOTO_COMPONENTI non e' in COLLEZIONI_BACKUP di proposito (un backup mette
+// tutta la collezione in un solo documento da 1MB, le foto lo sfonderebbero).
+export async function getFotoComponenti(entitaId) {
+  const q = query(collection(db, FOTO_COMPONENTI), where("kitId", "==", entitaId));
+  const snap = await getDocs(q);
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+
+export async function salvaFotoComponente(entitaId, compIndex, meta, dataUri) {
+  // Scrive prima la nuova foto: se qualcosa va storto (connessione scarsa in
+  // officina) la foto esistente del componente resta al suo posto.
+  const precedenti = (await getFotoComponenti(entitaId))
+    .filter(f => Number(f.compIndex) === Number(compIndex));
+
+  const docRef = await addDoc(collection(db, FOTO_COMPONENTI), {
+    kitId: entitaId,
+    compIndex,
+    compTipo: meta?.tipo || "",
+    compMatricola: meta?.matricola || "",
+    dataUri,
+    dataCaricamento: new Date().toISOString(),
+    timestamp: serverTimestamp(),
+  });
+
+  for (const f of precedenti) await deleteDoc(doc(db, FOTO_COMPONENTI, f.id));
+  return { id: docRef.id };
+}
+
+export async function eliminaFotoComponente(fotoId) {
+  await deleteDoc(doc(db, FOTO_COMPONENTI, fotoId));
 }
 
 // Cancella tutti i gruppi taglio da Firestore e ri-esegue il seed

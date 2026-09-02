@@ -86,7 +86,7 @@ export default function Backup({ reload }) {
           Il ripristino sostituisce interamente il contenuto di ogni collezione con quello del backup scelto:
           i dati creati dopo quel backup vengono persi. I file caricati su Google Drive non sono inclusi.
         </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
           <button className="btn btn-primary" onClick={handleBackupOra} disabled={busy}>Backup ora</button>
           <Link className="btn btn-secondary" to="/admin/rinumerazione">Rinumerazione seriali</Link>
         </div>
@@ -98,14 +98,20 @@ export default function Backup({ reload }) {
         {!lista.length ? (
           <div style={{ padding: 16, color: "var(--text3)", fontSize: 13 }}>Nessun backup ancora creato.</div>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+          <div className="bk-list">
             {lista.map(b => (
-              <div key={b.id} style={{ display: "flex", gap: 10, alignItems: "center", fontSize: 12, padding: "8px 10px", background: "var(--bg3)", borderRadius: 8 }}>
-                <span style={{ minWidth: 140 }}>{formatDataOra(b.creatoIl)}</span>
-                <span style={{ color: "var(--text3)" }}>{b.etichetta}</span>
-                <span style={{ flex: 1, color: "var(--text3)" }}>{totaleDocumenti(b.conteggi)} documenti</span>
-                <button className="gtc-btn go" disabled={busy} onClick={() => handleRipristina(b)}>Ripristina</button>
-                <button className="gtc-btn rev" disabled={busy} onClick={() => handleElimina(b)}>Elimina</button>
+              <div key={b.id} className="bk-row">
+                <div className="bk-meta">
+                  <span className="bk-data">{formatDataOra(b.creatoIl)}</span>
+                  <span className="bk-sub">
+                    {b.etichetta && <span className="bk-tag">{b.etichetta}</span>}
+                    {totaleDocumenti(b.conteggi)} documenti
+                  </span>
+                </div>
+                <div className="bk-actions">
+                  <button className="gtc-btn go" disabled={busy} onClick={() => handleRipristina(b)}>Ripristina</button>
+                  <button className="gtc-btn rev" disabled={busy} onClick={() => handleElimina(b)}>Elimina</button>
+                </div>
               </div>
             ))}
           </div>

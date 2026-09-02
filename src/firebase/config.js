@@ -14,3 +14,8 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+// Un upload/operazione fallito su Storage altrimenti ritenta per 2 minuti prima
+// di dare errore: l'utente resta col pulsante "Carico..." bloccato. Falliamo in
+// fretta così l'errore (es. Storage non configurato) si vede subito.
+storage.maxUploadRetryTime = 10000;
+storage.maxOperationRetryTime = 10000;
