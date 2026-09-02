@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { previewRinumerazioneCuscini, applicaRinumerazioneCuscini } from "../firebase/migrazione";
 import { getAllKits } from "../firebase/service";
 
@@ -76,6 +77,7 @@ export default function Rinumerazione({ reload }) {
           <button className="btn btn-secondary" onClick={scaricaBackup} disabled={busy}>Scarica backup</button>
           <button className="btn btn-secondary" onClick={anteprima} disabled={busy}>Anteprima</button>
           <button className="btn btn-primary" onClick={applica} disabled={busy || !mappa}>Applica</button>
+          <Link className="btn btn-secondary" to="/admin/backup">Backup e ripristino</Link>
         </div>
         {backupFatto && <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>✓ Backup scaricato nella cartella Download.</div>}
       </div>

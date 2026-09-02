@@ -12,6 +12,7 @@ import GruppiTaglioForm from "./pages/GruppiTaglioForm";
 import Calendario from "./pages/Calendario";
 import AdminReset from "./pages/AdminReset";
 import Rinumerazione from "./pages/Rinumerazione";
+import Backup from "./pages/Backup";
 
 // Firebase
 import { getAllKits, cercaGlobale, getAllGruppiTaglio } from "./firebase/service";
@@ -319,6 +320,7 @@ export default function App() {
               {/* ADMIN */}
               <Route path="/admin-reset" element={<AdminReset/>}/>
               <Route path="/admin/rinumerazione" element={<Rinumerazione reload={loadAll}/>}/>
+              <Route path="/admin/backup" element={<Backup reload={loadAll}/>}/>
 
               {/* Redirect delle vecchie tab rimosse */}
               <Route path="/kit" element={<Navigate to="/" replace/>}/>
