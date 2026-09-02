@@ -49,7 +49,7 @@ export default function Rinumerazione({ reload }) {
       <div className="page-header"><h1 className="page-title">Rinumerazione seriali cuscini</h1></div>
       <div className="card" style={{ marginBottom: 16 }}>
         <p style={{ fontSize: 13, color: "var(--text2)" }}>
-          Ricalcola le matricole Lucca dei cuscini con contatore globale per categoria.
+          Ricalcola le matricole Lucca dei cuscini con contatore unico condiviso da tutte le categorie (001, 002, ...).
           Operazione idempotente: salva <code>vecchio_codice</code>. Solo cuscini, i gruppi taglio non sono toccati.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>

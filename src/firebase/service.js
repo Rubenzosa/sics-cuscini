@@ -73,6 +73,17 @@ export async function mettiComponenteFuoriUso(kitId, indexComp, note) {
   });
   await updateDoc(doc(db, KITS, kitId), { componenti });
 }
+// Elimina definitivamente il vecchio codice (matricola pre-rinumerazione)
+// di un componente, una volta verificato il nuovo. Irreversibile.
+export async function eliminaVecchioCodice(kitId, indexComp) {
+  const kitSnap = await getDoc(doc(db, KITS, kitId));
+  if (!kitSnap.exists()) throw new Error("Kit non trovato");
+  const kit = kitSnap.data();
+  const componenti = [...(kit.componenti || [])];
+  const { vecchio_codice, ...resto } = { ...componenti[indexComp] };
+  componenti[indexComp] = resto;
+  await updateDoc(doc(db, KITS, kitId), { componenti });
+}
 export async function getStoricoSostituzioni(kitId) {
   const snap = await getDocs(collection(db, STORICO_SOST));
   return snap.docs.map(d => ({ id: d.id, ...d.data() }))

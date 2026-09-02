@@ -4,10 +4,11 @@ import {
   deleteKit, sostituisciComponente, getStoricoSostituzioni,
   aggiungiRevisione, getRevisioni, spostaKit, getStoricoSpostamenti,
   uploadAllegato, getAllegatiKit, deleteAllegato, mettiComponenteFuoriUso,
+  eliminaVecchioCodice,
 } from "../firebase/service";
 import { calcolaStato, statoLabel, formatData, giorniAllaScadenza, componentiFuoriUso, oggiIso } from "../utils";
 import Documenti from "../components/Documenti";
-import { PROSSIMI_SERIALI, buildMatricolaLucca } from "../data/kitData";
+import { suggerisciMatricola } from "../numerazione";
 
 const TIPI_COMP = ["CUSCINO 30X30","CUSCINO 35X35","CUSCINO 37X37","CUSCINO 38X38","CUSCINO 40X40","CUSCINO 45X45","CUSCINO 47X52","CUSCINO 48X58","CUSCINO 50X50","CUSCINO 55X55","CUSCINO 60X60","CUSCINO 65X65","CUSCINO 100X32","CENTRALINA","RIDUTTORE","TUBO","TUBO 2MT","TUBO 5MT","RUB. VALVOLARE"];
 const DISLOCAZIONI = ["Sede Centrale","Magazzino","Montepulciano","Montalcino","Poggibonsi","Piancastagnaio"];
@@ -18,31 +19,6 @@ const DEST_COLOR = {
   revisione: { bg:"var(--amber-bg)", color:"var(--amber-text)" },
 };
 const ESITO_COLOR = { positivo:"green", condizionato:"amber", negativo:"red" };
-
-function calcolaMatricolaAuto(tipo, bar, kits) {
-  let codice;
-  if (tipo.startsWith("CUSCINO")) codice = "CS";
-  else if (tipo.startsWith("TUBO")) codice = "TB";
-  else if (tipo === "CENTRALINA") codice = "CN";
-  else if (tipo === "RIDUTTORE") codice = "RP";
-  else if (tipo === "RUB. VALVOLARE") codice = "RV";
-  else return "";
-  const key = `${codice}_${bar}`;
-  const base = PROSSIMI_SERIALI[key] || 1;
-  let maxUsato = base - 1;
-  (kits || []).forEach(kit => {
-    (kit.componenti || []).forEach(c => {
-      if (c.matricolaLucca) {
-        const parts = c.matricolaLucca.split(" ");
-        if (parts[0] === codice && parseInt(parts[1]) === bar) {
-          const ser = parseInt(parts[3]);
-          if (!isNaN(ser) && ser > maxUsato) maxUsato = ser;
-        }
-      }
-    });
-  });
-  return buildMatricolaLucca(tipo, bar, maxUsato + 1);
-}
 
 function fmtSize(b) {
   if (!b) return "";
@@ -184,7 +160,7 @@ export default function KitDetail({ kits, reload }) {
 
   function apriSostituisci(i) {
     const c = kit.componenti[i];
-    setNuovoComp({ tipo:c.tipo, modello:"", matricola:"", bar:c.bar||kit.bar, matricolaLucca:calcolaMatricolaAuto(c.tipo, c.bar||kit.bar, kits), dataInizioServizio:oggiIso(), dataRevisione:"", note:"" });
+    setNuovoComp({ tipo:c.tipo, modello:"", matricola:"", bar:c.bar||kit.bar, matricolaLucca:suggerisciMatricola(kits, c.tipo, c.bar||kit.bar), dataInizioServizio:oggiIso(), dataRevisione:"", note:"" });
     setDestComp("fuori_uso"); setNoteUscita(""); setModalSost(i);
   }
 
@@ -192,10 +168,16 @@ export default function KitDetail({ kits, reload }) {
     setNuovoComp(p => {
       const u = { ...p, [field]: value };
       if (field === "tipo" || field === "bar") {
-        u.matricolaLucca = calcolaMatricolaAuto(field === "tipo" ? value : p.tipo, field === "bar" ? Number(value) : Number(p.bar), kits);
+        u.matricolaLucca = suggerisciMatricola(kits, field === "tipo" ? value : p.tipo, field === "bar" ? Number(value) : Number(p.bar));
       }
       return u;
     });
+  }
+
+  async function handleEliminaVecchioCodice(indexComp) {
+    if (!window.confirm("Eliminare definitivamente il vecchio codice? Non sarà più recuperabile.")) return;
+    try { await eliminaVecchioCodice(kit.id, indexComp); await reload(); }
+    catch (e) { alert("Errore: " + e.message); }
   }
 
   async function handleSostituisci() {
@@ -349,7 +331,14 @@ export default function KitDetail({ kits, reload }) {
                           <span className="gtc-spec"><span className="gtc-spec-k">In servizio</span><span className="gtc-spec-v">{formatData(c.dataInizioServizio)}</span></span>
                         )}
                         {c.vecchio_codice && c.vecchio_codice !== c.matricolaLucca && (
-                          <span className="gtc-spec"><span className="gtc-spec-k">Vecchio codice</span><span className="gtc-spec-v" style={{ textDecoration:"line-through", color:"var(--text3)" }}>{c.vecchio_codice}</span></span>
+                          <span className="gtc-spec">
+                            <span className="gtc-spec-k">Vecchio codice</span>
+                            <span className="gtc-spec-v" style={{ textDecoration:"line-through", color:"var(--text3)" }}>{c.vecchio_codice}</span>
+                            <button type="button" onClick={() => handleEliminaVecchioCodice(ri)}
+                              style={{ marginLeft:6, fontSize:10, padding:"1px 6px", border:"1px solid var(--border)", borderRadius:6, background:"transparent", color:"var(--text3)", cursor:"pointer" }}>
+                              Elimina storico
+                            </button>
+                          </span>
                         )}
                         {c.note && <span className="gtc-spec bad"><span className="gtc-spec-k">Nota</span><span className="gtc-spec-v">{c.note}</span></span>}
                       </div>

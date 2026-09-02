@@ -1,12 +1,21 @@
 // ─────────────────────────────────────────────────────────────
 // Numerazione seriali "matricola Lucca" — SOLO CUSCINI
-// Codice: [CATEGORIA][BAR]SI[INDICE], es. "CS 8 SI 1".
-// L'indice è un contatore globale per categoria, continuo su tutti
-// i bar; il bar (numero in mezzo) si preserva dal record.
+// Codice: [CATEGORIA][BAR]SI[INDICE], es. "CS 8 SI 001".
+// L'indice è un contatore UNICO globale, condiviso da tutte le
+// categorie e tutti i bar (non uno per categoria): il componente
+// n-esimo incontrato riceve l'indice n. Formattato su 3 cifre
+// (001, 002, ...); al superamento di 999 riparte da 001.
+// Categoria e bar si preservano dal record, non entrano nel conteggio.
 // Spec: numerazione.md
 // ─────────────────────────────────────────────────────────────
 
 export const CATEGORIE = ["CS", "CN", "RP", "TB", "RV"];
+const MAX_INDICE = 999;
+
+// Riporta un indice nel range 1..999 (dopo 999 si riparte da 1).
+function wrapIndice(n) {
+  return n > MAX_INDICE ? ((n - 1) % MAX_INDICE) + 1 : n;
+}
 
 export function categoriaDaTipo(tipo) {
   if (!tipo) return null;
@@ -31,7 +40,7 @@ export function categoriaDaCodice(str) {
 }
 
 export function formatMatricolaLucca(cat, bar, index) {
-  return `${cat} ${bar} SI ${index}`;
+  return `${cat} ${bar} SI ${String(index).padStart(3, "0")}`;
 }
 
 // Ordine canonico dei kit cuscini che riproduce ESATTAMENTE l'appendice di
@@ -49,15 +58,16 @@ export function ordinaCanonicoCuscini(kits) {
   return [...(kits || [])].sort((a, b) => rank(a) - rank(b));
 }
 
-// Rinumera una lista ordinata di codici: contatore globale per categoria,
-// bar preservato. I codici non parsabili restano invariati (uppercase).
+// Rinumera una lista ordinata di codici: contatore UNICO condiviso da tutte
+// le categorie, bar preservato. I codici non parsabili restano invariati
+// (uppercase) e non avanzano il contatore.
 export function rinumeraSeriali(codici) {
-  const contatori = {};
+  let contatore = 0;
   return (codici || []).map(code => {
     const p = parseMatricolaLucca(code);
     if (!p) return typeof code === "string" ? code.toUpperCase() : code;
-    contatori[p.cat] = (contatori[p.cat] || 0) + 1;
-    return formatMatricolaLucca(p.cat, p.bar, contatori[p.cat]);
+    contatore++;
+    return formatMatricolaLucca(p.cat, p.bar, wrapIndice(contatore));
   });
 }
 
@@ -89,19 +99,20 @@ export function rinumeraCuscini(kits) {
   return { kits: nuoviKit, mappa };
 }
 
-// Prossimo indice suggerito per una categoria = max in uso (su tutti i bar) + 1.
-export function suggerisciIndice(kits, categoria) {
+// Prossimo indice suggerito = max indice in uso GLOBALMENTE (su tutte le
+// categorie e tutti i bar) + 1, con wrap dopo 999.
+export function suggerisciIndice(kits) {
   let max = 0;
   (kits || []).forEach(k => (k.componenti || []).forEach(c => {
     const p = parseMatricolaLucca(c.matricolaLucca);
-    if (p && p.cat === categoria && p.index > max) max = p.index;
+    if (p && p.index > max) max = p.index;
   }));
-  return max + 1;
+  return wrapIndice(max + 1);
 }
 
 // Codice completo suggerito per un nuovo componente, dato tipo e bar.
 export function suggerisciMatricola(kits, tipo, bar) {
   const cat = categoriaDaTipo(tipo);
   if (!cat) return "";
-  return formatMatricolaLucca(cat, Number(bar) || 0, suggerisciIndice(kits, cat));
+  return formatMatricolaLucca(cat, Number(bar) || 0, suggerisciIndice(kits));
 }

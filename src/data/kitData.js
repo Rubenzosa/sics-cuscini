@@ -1,30 +1,5 @@
-// Struttura matricola Lucca: TIPO_BAR_SI_SERIALE
-// es. "CS 8 SI 1" = Cuscino, 8 bar, Siena, seriale 1
-// Prossimi seriali disponibili (dal foglio NUMERI aggiornato al 10/06/2025):
-// CS_8: 32  CS_10: 7  CS_12: 5
-// CN_8: 10  CN_10: 14  CN_12: 2
-// RP_8: 11  RP_10: 4  RP_12: 2
-// TB_8: 33  TB_10: 12  TB_12: 4
-// RV_8: 7   RV_10: 8   RV_12: 5
-
-export const PROSSIMI_SERIALI = {
-  CS_8: 32, CS_10: 7, CS_12: 5,
-  CN_8: 10, CN_10: 14, CN_12: 2,
-  RP_8: 11, RP_10: 4,  RP_12: 2,
-  TB_8: 33, TB_10: 12, TB_12: 4,
-  RV_8: 7,  RV_10: 8,  RV_12: 5,
-};
-
-export function buildMatricolaLucca(tipo, bar, seriale) {
-  let codice;
-  if (tipo.startsWith("CUSCINO")) codice = "CS";
-  else if (tipo.startsWith("TUBO")) codice = "TB";
-  else if (tipo === "CENTRALINA") codice = "CN";
-  else if (tipo === "RIDUTTORE") codice = "RP";
-  else if (tipo === "RUB. VALVOLARE") codice = "RV";
-  else codice = "XX";
-  return `${codice} ${bar} SI ${seriale}`;
-}
+// Struttura matricola Lucca: TIPO_BAR_SI_SERIALE, es. "CS 8 SI 001".
+// Calcolo/suggerimento seriale: vedi src/numerazione.js.
 
 export const kitData = [
   {
