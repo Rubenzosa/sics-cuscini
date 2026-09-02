@@ -512,3 +512,19 @@ export async function resetAndSeedGruppiTaglio(gruppi) {
     await setDoc(doc(db, "gruppi_taglio", id), data);
   }
 }
+
+// ─── HELPER GENERICI A PERCORSO (usati da backup.js) ────
+export async function getAllDocs(percorso) {
+  const snap = await getDocs(collection(db, ...percorso));
+  return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+}
+export async function getDocAt(percorso) {
+  const snap = await getDoc(doc(db, ...percorso));
+  return snap.exists() ? { id: snap.id, ...snap.data() } : null;
+}
+export async function setDocAt(percorso, data) {
+  await setDoc(doc(db, ...percorso), data);
+}
+export async function deleteDocAt(percorso) {
+  await deleteDoc(doc(db, ...percorso));
+}
