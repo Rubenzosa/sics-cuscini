@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { previewRinumerazioneCuscini, applicaRinumerazioneCuscini } from "../firebase/migrazione";
+import { getAllKits } from "../firebase/service";
 
 export default function Rinumerazione({ reload }) {
   const [mappa, setMappa] = useState(null);
@@ -7,10 +8,27 @@ export default function Rinumerazione({ reload }) {
   const [fatto, setFatto] = useState(false);
   const [auth, setAuth] = useState(false);
   const [pw, setPw] = useState("");
+  const [backupFatto, setBackupFatto] = useState(false);
 
   function provaPw() {
     if (pw === "0577") setAuth(true);
     else alert("Password errata");
+  }
+
+  // Scarica un JSON con lo stato attuale di tutti i kit cuscini (pre-modifica).
+  async function scaricaBackup() {
+    const kits = await getAllKits();
+    const blob = new Blob([JSON.stringify(kits, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `backup-kits-cuscini-${new Date().toISOString().replace(/[:.]/g, "-")}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    setBackupFatto(true);
+    return kits;
   }
 
   async function anteprima() {
@@ -21,6 +39,7 @@ export default function Rinumerazione({ reload }) {
   async function applica() {
     if (!window.confirm("Applicare la rinumerazione a TUTTI i cuscini? Verifica prima che l'anteprima coincida con l'appendice di numerazione.md.")) return;
     setBusy(true);
+    await scaricaBackup();
     const m = await applicaRinumerazioneCuscini();
     setMappa(m); setFatto(true); setBusy(false);
     if (reload) await reload();
@@ -51,11 +70,14 @@ export default function Rinumerazione({ reload }) {
         <p style={{ fontSize: 13, color: "var(--text2)" }}>
           Ricalcola le matricole Lucca dei cuscini con contatore unico condiviso da tutte le categorie (001, 002, ...).
           Operazione idempotente: salva <code>vecchio_codice</code>. Solo cuscini, i gruppi taglio non sono toccati.
+          "Applica" scarica in automatico un backup JSON di tutti i kit prima di scrivere.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+          <button className="btn btn-secondary" onClick={scaricaBackup} disabled={busy}>Scarica backup</button>
           <button className="btn btn-secondary" onClick={anteprima} disabled={busy}>Anteprima</button>
           <button className="btn btn-primary" onClick={applica} disabled={busy || !mappa}>Applica</button>
         </div>
+        {backupFatto && <div style={{ fontSize: 12, color: "var(--text3)", marginTop: 8 }}>✓ Backup scaricato nella cartella Download.</div>}
       </div>
 
       {fatto && <div className="section-green" style={{ marginBottom: 12 }}>✓ Rinumerazione applicata: {mappa.length} codici aggiornati.</div>}

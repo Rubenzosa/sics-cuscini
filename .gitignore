@@ -11,6 +11,9 @@
 # production
 /build
 
+# backup snapshot Firestore (locali, non versionati)
+/backups
+
 # misc
 .DS_Store
 .env.local
