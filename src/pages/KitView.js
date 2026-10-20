@@ -1,5 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { Link } from "react-router-dom";
 import KitAccordion from "../components/KitAccordion";
 import Cartellino from "../components/Cartellino";
@@ -16,6 +16,8 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState(null);
   const [vista, setVista] = useState("scadenza");
+  // Aprendo o chiudendo un kit si riparte dall'alto: altrimenti su telefono resta a metà pagina.
+  useEffect(() => { window.scrollTo(0, 0); }, [openId]);
 
   const isTaglio = sistema === "taglio";
   const items = isTaglio ? (gruppiTaglio || []) : (kits || []);
@@ -76,6 +78,23 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
     w.document.close();
   }
 
+  // Kit aperto "a schermo pieno": si nasconde tutto il resto, si torna con "‹ Tutti i kit".
+  const aperto = openId ? visibili.find(it => it.id === openId) : null;
+  if (aperto) {
+    const scad = scadDi(aperto);
+    return (
+      <div>
+        <div className="kit-azioni">
+          <button className="btn btn-secondary" onClick={() => setOpenId(null)}>‹ Tutti i {isTaglio ? "gruppi" : "kit"}</button>
+        </div>
+        <div className="reg">
+          <KitAccordion item={aperto} sistema={sistema}
+            stato={calcStato(aperto)} giorni={giorniAllaScadenza(scad)} scad={scad}
+            open onToggle={() => setOpenId(null)} />
+        </div>
+      </div>
+    );
+  }
   return (
     <div>
       {/* Intestazione + nuovo */}
@@ -117,16 +136,12 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
       ) : (
         <div className="dafare">
           {problemi.map((p, i) => (
-            <Link key={p.item.id + p.tipo + i} to={detailPath(p.item)} className="dafare-row">
+            <Link key={p.item.id + p.tipo + i} to={detailPath(p.item)} className="dafare-row"
+              title={`${p.item.nome} · ${p.dettaglio}`}>
               <Cartellino numero={p.item.numero} targa={p.item.mezzo}/>
-              <span className="dafare-mid">
-                <span className="dafare-titolo">{p.titolo}</span>
-                <span className="dafare-sub">{p.item.nome} · {p.dettaglio}</span>
-              </span>
-              <span className={`reg-chip ${p.tipo === "scaduta" ? "b" : "w"}`}>
-                <span className="reg-dot"/>
-                {p.tipo === "scaduta" ? "Scaduta" : p.tipo === "fermi" ? "Attenzione" : `fra ${p.giorni} gg`}
-              </span>
+              <span className={`dafare-dot ${p.tipo === "scaduta" ? "b" : "w"}`}/>
+              <span className="dafare-titolo">{p.breve}</span>
+              <span className="dafare-chev">›</span>
             </Link>
           ))}
         </div>
