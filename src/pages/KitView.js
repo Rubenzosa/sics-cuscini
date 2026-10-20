@@ -2,14 +2,20 @@
 import React, { useState, useMemo } from "react";
 import { Link } from "react-router-dom";
 import KitAccordion from "../components/KitAccordion";
-import { contaStats, scortaMancante } from "../inventario";
-import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT, statoLabel, formatData, oggiIso } from "../utils";
+import Cartellino from "../components/Cartellino";
+import MenuAzioni from "../components/MenuAzioni";
+import { contaStats, scortaMancante, daFare } from "../inventario";
+import { calcolaStato, calcolaStatoGT, giorniAllaScadenza, prossimaRevisioneGT, statoLabel, formatData, oggiIso, componenteAttivoGT } from "../utils";
 import { deleteKit, deleteGruppoTaglio, updateKit, updateGruppoTaglio } from "../firebase/service";
 import { buildCsv, buildHtmlReport } from "../export";
+
+const VISTE = [["scadenza", "Scadenza"], ["targa", "Targa"], ["matricola", "Matricola"]];
+const MAX_CHIP_MATRICOLE = 5;
 
 export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
   const [search, setSearch] = useState("");
   const [openId, setOpenId] = useState(null);
+  const [vista, setVista] = useState("scadenza");
 
   const isTaglio = sistema === "taglio";
   const items = isTaglio ? (gruppiTaglio || []) : (kits || []);
@@ -18,6 +24,8 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
 
   const stats = useMemo(() => contaStats(items, calcStato), [items, isTaglio]);
   const mancaScorta = useMemo(() => scortaMancante(items), [items]);
+  const problemi = useMemo(() => daFare(items, isTaglio), [items, isTaglio]);
+  const detailPath = it => isTaglio ? `/gruppi-taglio/${it.id}` : `/kit/${it.id}`;
 
   const visibili = items.filter(it => it.stato !== "fuori_uso");
   const q = search.toLowerCase().trim();
@@ -74,20 +82,22 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
       <div className="page-header">
         <h1 className="page-title">{isTaglio ? "Gruppi da taglio" : "Kit cuscini"}</h1>
         <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
-          <button className="btn btn-secondary" onClick={esportaCsv}>Esporta CSV</button>
-          <button className="btn btn-secondary" onClick={esportaPdf}>Esporta PDF</button>
+          <MenuAzioni etichetta="Esporta ▾" voci={[
+            { label: "Esporta CSV", onClick: esportaCsv },
+            { label: "Esporta PDF", onClick: esportaPdf },
+          ]}/>
           <Link to={isTaglio ? "/gruppi-taglio/nuovo" : "/kit/nuovo"} className="btn btn-primary">
             + Nuovo {isTaglio ? "gruppo" : "kit"}
           </Link>
         </div>
       </div>
 
-      {/* Statistiche */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10, marginBottom: 16 }}>
-        <Stat n={stats.operativi} l="Operativi" />
-        <Stat n={stats.inScadenza} l="In scadenza" color="var(--amber-text)" />
-        <Stat n={stats.scaduti} l="Scaduti" color="var(--red-text)" />
-        <Stat n={stats.magazzino} l="Magazzino" color="var(--text3)" />
+      {/* Statistiche compatte */}
+      <div className="stats-riga">
+        <span><b>{stats.operativi}</b> operativi</span>
+        <span><b style={{ color: "var(--amber-text)" }}>{stats.inScadenza}</b> in scadenza</span>
+        <span><b style={{ color: "var(--red-text)" }}>{stats.scaduti}</b> scaduti</span>
+        <span><b>{stats.magazzino}</b> in magazzino</span>
       </div>
 
       {/* Banner scorta */}
@@ -100,37 +110,104 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
         </div>
       )}
 
+      {/* Da fare */}
+      <div className="sez-titolo">Da fare ({problemi.length})</div>
+      {!problemi.length ? (
+        <div className="dafare-vuoto">Niente da fare — tutto in regola</div>
+      ) : (
+        <div className="dafare">
+          {problemi.map((p, i) => (
+            <Link key={p.item.id + p.tipo + i} to={detailPath(p.item)} className="dafare-row">
+              <Cartellino numero={p.item.numero} targa={p.item.mezzo}/>
+              <span className="dafare-mid">
+                <span className="dafare-titolo">{p.titolo}</span>
+                <span className="dafare-sub">{p.item.nome} · {p.dettaglio}</span>
+              </span>
+              <span className={`reg-chip ${p.tipo === "scaduta" ? "b" : "w"}`}>
+                <span className="reg-dot"/>
+                {p.tipo === "scaduta" ? "Scaduta" : p.tipo === "fermi" ? "Attenzione" : `fra ${p.giorni} gg`}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
+
+      {/* Tutti i kit */}
+      <div className="sez-titolo sez-titolo-row">
+        <span>Tutti i {isTaglio ? "gruppi" : "kit"} ({filtrati.length})</span>
+        <span className="vista-sel" role="group" aria-label="Mostra per">
+          <span className="vista-lbl">Mostra per</span>
+          {VISTE.map(([k, l]) => (
+            <button key={k} type="button" aria-pressed={vista === k}
+              className={vista === k ? "vista-btn on" : "vista-btn"} onClick={() => setVista(k)}>{l}</button>
+          ))}
+        </span>
+      </div>
+
       {/* Ricerca */}
       <div style={{ position: "relative", marginBottom: 16 }}>
         <span style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text3)", pointerEvents: "none" }}>⌕</span>
-        <input className="search-input" style={{ paddingLeft: 40 }}
-          placeholder="Cerca numero, nome, matricola, mezzo..."
+        <input className="search-input" style={{ paddingLeft: 40, width: "100%", boxSizing: "border-box" }}
+          placeholder="Cerca kit, targa, matricola…"
           value={search} onChange={e => setSearch(e.target.value)} />
       </div>
 
-      {/* Lista accordion */}
+      {/* Lista */}
       {!filtrati.length ? (
         <div style={{ textAlign: "center", padding: 40, color: "var(--text3)", fontSize: 14 }}>Nessun kit trovato.</div>
+      ) : vista === "matricola" ? (
+        <div className="reg">
+          {filtrati.map(it => {
+            const comps = it.componenti || [];
+            const extra = comps.length - MAX_CHIP_MATRICOLE;
+            return (
+              <Link key={it.id} to={detailPath(it)} className="mat-row">
+                <Cartellino numero={it.numero} targa={it.mezzo}/>
+                <span className="mat-mid">
+                  <span className="reg-nome">{it.nome} <span className="mat-n">· {comps.length} componenti</span></span>
+                  <span className="mat-chips">
+                    {comps.slice(0, MAX_CHIP_MATRICOLE).map((c, i) => {
+                      const fermo = isTaglio ? !componenteAttivoGT(c) : c.fuoriUso;
+                      const codice = isTaglio ? c.matricola : c.matricolaLucca;
+                      const sec = isTaglio ? "" : c.matricola;
+                      return (
+                        <span key={i} className={fermo ? "mat-chip fermo" : "mat-chip"}>
+                          {codice || "n.d."} <i>{c.tipo}{sec ? ` · ${sec}` : ""}</i>
+                        </span>
+                      );
+                    })}
+                    {extra > 0 && <span className="mat-chip">+{extra}</span>}
+                  </span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       ) : (
         <div className="reg">
           <div className="reg-head reg-cols">
             <span className="reg-h">Kit</span>
             <span className="reg-h">Mezzo</span>
             <span className="reg-h">Dislocazione</span>
-            <span className="reg-h r">Revisione</span>
+            <span className="reg-h r">{vista === "targa" ? "Composizione" : "Revisione"}</span>
             <span className="reg-h r">Stato</span>
             <span/>
           </div>
-          {filtrati.map(it => {
-            const st = calcStato(it);
-            const scad = scadDi(it);
-            return (
-              <KitAccordion key={it.id} item={it} sistema={sistema}
-                stato={st} giorni={giorniAllaScadenza(scad)} scad={scad}
-                open={openId === it.id}
-                onToggle={() => setOpenId(openId === it.id ? null : it.id)} />
-            );
-          })}
+          {raggruppa(filtrati, vista).map(([gruppo, lista]) => (
+            <React.Fragment key={gruppo || "_"}>
+              {gruppo !== null && <div className="reg-gruppo">{gruppo}</div>}
+              {lista.map(it => {
+                const st = calcStato(it);
+                const scad = scadDi(it);
+                return (
+                  <KitAccordion key={it.id} item={it} sistema={sistema} vista={vista}
+                    stato={st} giorni={giorniAllaScadenza(scad)} scad={scad}
+                    open={openId === it.id}
+                    onToggle={() => setOpenId(openId === it.id ? null : it.id)} />
+                );
+              })}
+            </React.Fragment>
+          ))}
         </div>
       )}
 
@@ -164,11 +241,11 @@ export default function KitView({ kits, gruppiTaglio, sistema, reload }) {
   );
 }
 
-function Stat({ n, l, color }) {
-  return (
-    <div className="card" style={{ padding: "12px 14px" }}>
-      <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1, color: color || "var(--text)" }}>{n}</div>
-      <div style={{ fontSize: 10, fontWeight: 800, textTransform: "uppercase", letterSpacing: ".05em", color: "var(--text3)", marginTop: 6 }}>{l}</div>
-    </div>
-  );
+// Vista "targa": gruppi per dislocazione, dentro ordinati per targa. Altre viste: un solo gruppo senza titolo.
+function raggruppa(lista, vista) {
+  if (vista !== "targa") return [[null, lista]];
+  const gruppi = {};
+  lista.forEach(it => { const g = it.dislocazione || "—"; (gruppi[g] = gruppi[g] || []).push(it); });
+  return Object.keys(gruppi).sort((a, b) => a.localeCompare(b))
+    .map(g => [g, gruppi[g].sort((a, b) => (a.mezzo || "").localeCompare(b.mezzo || ""))]);
 }

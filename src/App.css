@@ -1289,7 +1289,7 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
 }
 .reg-cols {
   display: grid;
-  grid-template-columns: 66px minmax(0, 1fr) 130px 116px 116px 28px;
+  grid-template-columns: 88px minmax(0, 1fr) 130px 116px 116px 28px;
   gap: 12px;
   align-items: center;
 }
@@ -1365,7 +1365,7 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
 
 @media (max-width: 760px) {
   .reg-head { display: none; }
-  .reg-cols { grid-template-columns: 60px minmax(0, 1fr) 104px; row-gap: 4px; }
+  .reg-cols { grid-template-columns: 80px minmax(0, 1fr) 104px; row-gap: 4px; }
   .reg-row { height: auto; padding: 12px; }
   .reg-loc, .reg-chev, .reg-marca { display: none; }
   .reg-scad { grid-column: 3; }
@@ -1410,3 +1410,59 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
 }
 .menu-az-voce:hover { background: var(--bg3); }
 .menu-az-voce.danger { color: var(--red-text); }
+
+/* ── Home: statistiche compatte, Da fare, Mostra per ── */
+.stats-riga {
+  display: flex; flex-wrap: wrap; gap: 6px 18px; margin: -6px 0 16px;
+  font-size: 12px; font-weight: 700; color: var(--text2);
+}
+.stats-riga b { color: var(--text); font-size: 14px; font-weight: 900; }
+.sez-titolo {
+  font-size: 10px; font-weight: 900; letter-spacing: .12em; text-transform: uppercase;
+  color: var(--text2); margin: 4px 2px 10px;
+}
+.sez-titolo-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-top: 24px; }
+
+.dafare { display: flex; flex-direction: column; gap: 8px; }
+.dafare-row, .mat-row {
+  display: flex; align-items: center; gap: 12px; padding: 9px 12px; border-radius: 12px;
+  background: var(--bg); box-shadow: var(--neu-out); color: inherit; text-decoration: none;
+  transition: box-shadow .2s, transform .2s;
+}
+.dafare-row:hover, .mat-row:hover { transform: translateY(-1px); }
+.dafare-row:focus-visible, .mat-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.dafare-mid, .mat-mid { flex: 1; min-width: 0; }
+.dafare-titolo { display: block; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dafare-sub { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dafare-vuoto {
+  padding: 14px; border-radius: 12px; box-shadow: var(--neu-in);
+  font-size: 13px; font-weight: 700; color: var(--green-text); text-align: center;
+}
+
+.vista-sel { display: inline-flex; align-items: center; gap: 4px; padding: 3px; border-radius: 10px; box-shadow: var(--neu-in); }
+.vista-lbl { font-size: 9px; padding: 0 6px 0 8px; color: var(--text3); }
+.vista-btn {
+  border: none; background: none; border-radius: 8px; padding: 6px 12px; cursor: pointer;
+  font: inherit; font-size: 11px; font-weight: 800; letter-spacing: 0; text-transform: none; color: var(--text2);
+}
+.vista-btn.on { background: var(--bg); box-shadow: var(--neu-out); color: var(--accent); }
+
+.reg-gruppo { font-size: 11px; font-weight: 800; color: var(--accent); padding: 12px 12px 4px; }
+
+.reg > .mat-row + .mat-row { margin-top: 8px; }
+.mat-row { align-items: flex-start; }
+.mat-n { font-size: 11px; font-weight: 600; color: var(--text3); }
+.mat-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.mat-chip {
+  font-family: monospace; font-size: 10px; font-weight: 800; white-space: nowrap;
+  background: var(--blue-bg); color: var(--blue-text); padding: 2px 7px; border-radius: 5px;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis;
+}
+.mat-chip i { font-style: normal; font-weight: 600; color: var(--text2); }
+.mat-chip.fermo { background: var(--red-bg); color: var(--red-text); }
+
+@media (max-width: 600px) {
+  .dafare-row, .mat-row { gap: 9px; padding: 8px 10px; }
+  .dafare-row .reg-chip { padding: 4px 7px; }
+  .vista-lbl { display: none; }
+}
