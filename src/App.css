@@ -1447,3 +1447,38 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
   .reg-row:hover { transform: none; }
   .reg-chev { transition: none; }
 }
+
+/* ── Cartellino targa / MenuAzioni ──
+   Colori solo da variabili: in tema scuro bordo e fascia diventano chiari da soli. */
+.cart {
+  display: inline-flex; flex-direction: column; align-items: center; flex-shrink: 0;
+  min-width: 72px; border: 2px solid var(--text); border-radius: 7px; overflow: hidden;
+  background: var(--bg3); line-height: 1.25;
+}
+.cart > b {
+  width: 100%; text-align: center; font-size: 10px; font-weight: 900; letter-spacing: .03em;
+  background: var(--text); color: var(--bg); padding: 1px 4px; white-space: nowrap;
+}
+.cart > span {
+  font-family: monospace; font-size: 11px; font-weight: 800; color: var(--text);
+  padding: 2px 6px; white-space: nowrap; max-width: 110px; overflow: hidden; text-overflow: ellipsis;
+}
+.cart-lg { min-width: 96px; border-width: 3px; border-radius: 9px; }
+.cart-lg > b { font-size: 13px; padding: 2px 6px; }
+.cart-lg > span { font-size: 15px; padding: 3px 8px; }
+.cart-off { border-color: var(--text3); }
+.cart-off > b { background: var(--text3); }
+.cart-off > span { color: var(--text3); font-size: 9px; }
+
+.menu-az { position: relative; display: inline-block; }
+.menu-az-lista {
+  position: absolute; right: 0; top: calc(100% + 6px); z-index: 50; min-width: 150px;
+  display: flex; flex-direction: column; padding: 6px; border-radius: 10px;
+  background: var(--bg); box-shadow: var(--neu-out-lg);
+}
+.menu-az-voce {
+  text-align: left; background: none; border: none; border-radius: 7px; padding: 8px 10px;
+  font: inherit; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap;
+}
+.menu-az-voce:hover { background: var(--bg3); }
+.menu-az-voce.danger { color: var(--red-text); }
