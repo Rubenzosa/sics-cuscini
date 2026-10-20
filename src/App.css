@@ -1408,6 +1408,7 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
   text-align: left; background: none; border: none; border-radius: 7px; padding: 8px 10px;
   font: inherit; font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; white-space: nowrap;
 }
+.menu-az-lista.dx { right: auto; left: 0; }
 .menu-az-voce:hover { background: var(--bg3); }
 .menu-az-voce.danger { color: var(--red-text); }
 

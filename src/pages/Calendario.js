@@ -254,6 +254,10 @@ export default function Calendario({ kits, gruppiTaglio }) {
 
   return (
     <div>
+      {/* Uscita esplicita: su telefono il logo non sembra un pulsante */}
+      <div className="kit-azioni">
+        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Torna ai kit</button>
+      </div>
       <div className="page-header">
         <div>
           <h1 className="page-title">Calendario</h1>

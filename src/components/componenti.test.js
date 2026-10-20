@@ -25,3 +25,10 @@ test("menu: apre, esegue la voce e si chiude", () => {
   expect(fn).toHaveBeenCalledTimes(1);
   expect(screen.queryByText("CSV")).toBeNull();
 });
+
+test("menu vicino al bordo sinistro si apre verso destra", () => {
+  // jsdom: il pulsante sta a left 0, cioè nella metà sinistra dello schermo
+  render(<MenuAzioni etichetta="Esporta" voci={[{ label:"CSV", onClick: () => {} }]}/>);
+  fireEvent.click(screen.getByText("Esporta"));
+  expect(screen.getByRole("menu")).toHaveClass("dx");
+});
