@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════
 // SICS Service Worker — PWA offline support
 // ═══════════════════════════════════════════════════
-const CACHE_NAME = "sics-v3";
+const CACHE_NAME = "sics-v4";
 const STATIC_ASSETS = [
   "/",
   "/index.html",
