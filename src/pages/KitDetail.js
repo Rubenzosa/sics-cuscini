@@ -302,7 +302,7 @@ export default function KitDetail({ kits, reload }) {
       {tab === "dati" && (
         <div className="card">
           <div className="dati-grid">
-            {[["Numero kit",kit.numero],["Nome / Mezzo",kit.nome],["Targa",kit.mezzo],["Tipo mezzo",kit.tipoMezzo||"—"],["Pressione",`${kit.bar} bar`],["Anno acquisto",kit.annoAcquisto],["Data acquisto",formatData(kit.dataAcquisto)],["Dislocazione",kit.dislocazione||"—"],["Ultima revisione",formatData(kit.dataRevisione)],["Scade tra",giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],["Tecnico ultimo collaudo",kit.ultimaRevisioneTecnico||"—"],["Esito ultimo collaudo",kit.ultimaRevisioneEsito||"—"],["Totale componenti",comps.length]].map(([label,val]) => (
+            {[["Numero kit",kit.numero],["Nome / Mezzo",kit.nome],["Targa",kit.mezzo],["Tipo mezzo",kit.tipoMezzo||"—"],["Pressione",`${kit.bar} bar`],["Anno acquisto",kit.annoAcquisto],["Data acquisto",formatData(kit.dataAcquisto)],["Dislocazione",kit.dislocazione||"—"],["Prossima revisione",formatData(kit.dataRevisione)],["Scade tra",giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],["Tecnico ultimo collaudo",kit.ultimaRevisioneTecnico||"—"],["Esito ultimo collaudo",kit.ultimaRevisioneEsito||"—"],["Totale componenti",comps.length]].map(([label,val]) => (
               <div key={label} className="dati-cella">
                 <div className="dati-l">{label}</div>
                 <div className="dati-v">{val}</div>
