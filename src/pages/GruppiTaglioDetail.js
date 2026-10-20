@@ -6,6 +6,9 @@ import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAlla
 import { fotoDelComponente } from "../foto";
 import Documenti from "../components/Documenti";
 import FotoComponente from "../components/FotoComponente";
+import Cartellino from "../components/Cartellino";
+import MenuAzioni from "../components/MenuAzioni";
+import { unisciStorico } from "../storico";
 
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
 
@@ -28,7 +31,8 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const navigate = useNavigate();
   const gt = gruppi.find(g => g.id === id);
 
-  const [tab, setTab]             = useState("info");
+  const [tab, setTab]             = useState("componenti");
+  const [filtroStorico, setFiltroStorico] = useState("tutto");
   const [revisioni, setRevisioni] = useState([]);
   const [manutenzioni, setManutenzioni] = useState([]);
   const [modalRev, setModalRev]   = useState(false);
@@ -54,7 +58,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
 
   if (!gt) return (
     <div style={{ textAlign:"center", padding:60, color:"var(--text3)" }}>
-      Gruppo non trovato. <button className="card-action" onClick={() => navigate("/gruppi-taglio")}>Torna alla lista</button>
+      Gruppo non trovato. <button className="card-action" onClick={() => navigate("/")}>Torna alla lista</button>
     </div>
   );
 
@@ -63,12 +67,19 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   const giorni  = giorniAllaScadenza(proxRev);
   const badge   = sistemaBadge(gt.sistema);
   const fermi   = componentiNonOperativiGT(gt);
+  const comps   = gt.componenti || [];
+  const storico = unisciStorico([
+    { tipo:"revisione",    voci: revisioni,    data: v => v.dataRevisione },
+    { tipo:"manutenzione", voci: manutenzioni, data: v => v.data },
+    { tipo:"stato",        voci: statiComp,    data: v => v.data },
+  ]);
+  const storicoFiltrato = filtroStorico === "tutto" ? storico : storico.filter(e => e.tipo === filtroStorico);
 
   async function handleDelete() {
     if (!window.confirm(`Eliminare il gruppo "${gt.nome}"?`)) return;
     await deleteGruppoTaglio(gt.id);
     await reload();
-    navigate("/gruppi-taglio");
+    navigate("/");
   }
 
   async function salvaRevisione() {
@@ -127,19 +138,48 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
 
   return (
     <div>
-      <div className="page-header">
-        <div style={{ display:"flex", alignItems:"center", gap:10, flexWrap:"wrap" }}>
-          <button className="btn btn-secondary" onClick={() => navigate("/gruppi-taglio")}>← Indietro</button>
-          <h1 className="page-title">Kit {gt.numero} — {gt.nome}</h1>
-          <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
-          <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:10, background:badge.bg, color:badge.color }}>{badge.label}</span>
+      {/* Barra azioni */}
+      <div className="kit-azioni">
+        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Gruppi da taglio</button>
+        <span style={{ flex:1 }}/>
+        <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
+        <button className="btn btn-secondary" onClick={() => setModalMan(true)}>+ Manutenzione</button>
+        <Link to={`/gruppi-taglio/${gt.id}/modifica`} className="btn btn-secondary">Modifica</Link>
+        <MenuAzioni etichetta="⋯" voci={[{ label:"Elimina gruppo", onClick: handleDelete, danger:true }]}/>
+      </div>
+
+      {/* Testata */}
+      <div className="kit-hero">
+        <Cartellino grande numero={gt.numero} targa={gt.mezzo}/>
+        <div className="kit-hero-mid">
+          <h1 className="kit-hero-nome">{gt.nome}</h1>
+          <div className="kit-hero-sub">{gt.dislocazione || "—"} · {gt.marca || "—"} · {badge.label} · {comps.length} componenti</div>
+          <div className="kit-hero-chips">
+            <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
+            {fermi.totale > 0 && <span className="pill attenzione">{fermi.totale === 1 ? "1 componente fermo" : `${fermi.totale} componenti fermi`}</span>}
+          </div>
         </div>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <button className="btn btn-secondary" onClick={() => navigate("/calendario")}>Calendario</button>
-          <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
-          <button className="btn btn-secondary" onClick={() => setModalMan(true)}>Manutenzione</button>
-          <Link to={`/gruppi-taglio/${gt.id}/modifica`} className="btn btn-secondary">Modifica</Link>
-          <button className="btn btn-danger" onClick={handleDelete}>Elimina</button>
+      </div>
+
+      <div className="kit-kpis">
+        <div className="kit-kpi">
+          <div className="kit-kpi-l">Prossima revisione</div>
+          <div className="kit-kpi-v">{proxRev && proxRev !== "NO REVISIONE" ? formatData(proxRev) : proxRev || "—"}</div>
+          <div className="kit-kpi-s">{giorni === null ? "—" : giorni < 0 ? `scaduta da ${Math.abs(giorni)} giorni` : `fra ${giorni} giorni`}</div>
+        </div>
+        <div className="kit-kpi">
+          <div className="kit-kpi-l">Ultima manutenzione</div>
+          <div className="kit-kpi-v">{manutenzioni[0] ? formatData(manutenzioni[0].data) : "—"}</div>
+          <div className="kit-kpi-s">{manutenzioni[0]?.tipo || "nessuna registrata"}</div>
+        </div>
+        <div className="kit-kpi">
+          <div className="kit-kpi-l">Componenti</div>
+          <div className="kit-kpi-v">{comps.length - fermi.totale} / {comps.length}</div>
+          <div className="kit-kpi-s" style={fermi.totale ? { color:"var(--amber-text)", fontWeight:700 } : undefined}>
+            {fermi.totale
+              ? [fermi.inRevisione && `${fermi.inRevisione} in revisione`, fermi.fuoriServizio && `${fermi.fuoriServizio} fuori servizio`].filter(Boolean).join(" · ")
+              : "tutti operativi"}
+          </div>
         </div>
       </div>
 
@@ -162,62 +202,58 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           Kit incompleto — {fermi.inRevisione > 0 ? fermi.inRevisione + " in revisione" : ""}
           {fermi.inRevisione > 0 && fermi.fuoriServizio > 0 ? " · " : ""}
           {fermi.fuoriServizio > 0 ? fermi.fuoriServizio + " fuori servizio" : ""}
-          {" · vedi tab Componenti"}
+          {" · vedi pannello Componenti"}
         </div>
       )}
       {stato==="scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>Revisione scaduta da {Math.abs(giorni)} giorni</div>}
       {stato==="critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>Revisione tra {giorni} giorni — pianifica</div>}
 
-      {/* TABS */}
-      <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        {[["info","Dati"],["componenti",`Componenti (${(gt.componenti||[]).length})`],["revisioni",`Revisioni (${revisioni.length})`],["manutenzione",`Manutenzione (${manutenzioni.length})`]].map(([key,label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ background:"none", border:"none", borderBottom:tab===key?"2px solid var(--accent)":"2px solid transparent", color:tab===key?"var(--text)":"var(--text3)", fontSize:13, fontWeight:tab===key?700:500, padding:"10px 14px", cursor:"pointer", fontFamily:"inherit", marginBottom:-2, whiteSpace:"nowrap", flexShrink:0 }}>
-            {label}
-          </button>
+      {/* Pannelli */}
+      <div className="kit-tabs">
+        {[["componenti",`Componenti (${comps.length})`],["dati","Dati gruppo"],["storico",`Storico (${storico.length})`],["documenti","Documenti"]].map(([key, label]) => (
+          <button key={key} type="button" aria-pressed={tab===key}
+            className={tab===key ? "kit-tab on" : "kit-tab"} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
 
-      {/* TAB INFO */}
-      {tab==="info" && (
+      {/* PANNELLO: DATI GRUPPO */}
+      {tab==="dati" && (
         <div className="two-col">
           <div className="card">
-            <div className="card-header"><span className="card-title">Dati gruppo</span></div>
-            <table style={{ width:"100%" }}>
-              <tbody>
-                {[
-                  ["Numero kit",        gt.numero],
-                  ["Nome / Mezzo",      gt.nome],
-                  ["Targa",             gt.mezzo],
-                  ["Tipo mezzo",        gt.tipoMezzo||"—"],
-                  ["Sistema",           badge.label],
-                  ["Marca principale",  gt.marca||"—"],
-                  ["Anno acquisto",     gt.annoAcquisto||"—"],
-                  ["Revisione ogni",    gt.intervalloRevisioneAnni?`${gt.intervalloRevisioneAnni} anni`:"—"],
-                  ["Dislocazione",      gt.dislocazione||"—"],
-                  ["Prox. revisione",   proxRev&&proxRev!=="NO REVISIONE"?formatData(proxRev):proxRev||"N/D"],
-                  ["Scade tra",         giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],
-                  ["Ult. rev. esito",   gt.ultimaRevisioneEsito||"—"],
-                  ["Ult. rev. tecnico", gt.ultimaRevisioneTecnico||"—"],
-                  ["Componenti totali", (gt.componenti||[]).length],
-                ].map(([label,val]) => (
-                  <tr key={label}>
-                    <td style={{ color:"var(--text3)", fontSize:12, width:"45%", padding:"7px 0", borderBottom:"1px solid var(--border)" }}>{label}</td>
-                    <td style={{ fontWeight:500, fontSize:13, padding:"7px 0", borderBottom:"1px solid var(--border)" }}>{val}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="dati-grid">
+              {[
+                ["Numero kit",        gt.numero],
+                ["Nome / Mezzo",      gt.nome],
+                ["Targa",             gt.mezzo],
+                ["Tipo mezzo",        gt.tipoMezzo||"—"],
+                ["Sistema",           badge.label],
+                ["Marca principale",  gt.marca||"—"],
+                ["Anno acquisto",     gt.annoAcquisto||"—"],
+                ["Revisione ogni",    gt.intervalloRevisioneAnni?`${gt.intervalloRevisioneAnni} anni`:"—"],
+                ["Dislocazione",      gt.dislocazione||"—"],
+                ["Prox. revisione",   proxRev&&proxRev!=="NO REVISIONE"?formatData(proxRev):proxRev||"N/D"],
+                ["Scade tra",         giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],
+                ["Ult. rev. esito",   gt.ultimaRevisioneEsito||"—"],
+                ["Ult. rev. tecnico", gt.ultimaRevisioneTecnico||"—"],
+                ["Componenti totali", comps.length],
+              ].map(([label,val]) => (
+                <div key={label} className="dati-cella">
+                  <div className="dati-l">{label}</div>
+                  <div className="dati-v">{val}</div>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Centraline con olio e candela in evidenza */}
           <div className="card">
             <div className="card-header"><span className="card-title">Manutenzione corrente</span></div>
-            {(gt.componenti||[]).filter(c => c.olio || c.candela).length === 0 ? (
+            {comps.filter(c => c.olio || c.candela).length === 0 ? (
               <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:20 }}>
                 Sistema elettrico — nessuna candela/olio previsti
               </div>
             ) : (
-              (gt.componenti||[]).filter(c => c.olio || c.candela).map((c,i) => (
+              comps.filter(c => c.olio || c.candela).map((c,i) => (
                 <div key={i} style={{ padding:"10px 0", borderBottom:"1px solid var(--border)" }}>
                   <div style={{ fontWeight:700, fontSize:13 }}>{c.tipo}</div>
                   <div style={{ fontSize:12, color:"var(--text2)", marginTop:2 }}>{c.modello}</div>
@@ -388,59 +424,47 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
         </div>
       )}
 
-      {/* TAB REVISIONI */}
-      {tab==="revisioni" && (
+      {/* PANNELLO: STORICO (revisioni + manutenzioni + stato componenti) */}
+      {tab==="storico" && (
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Storico revisioni ({revisioni.length})</span>
-            <button className="btn btn-success" style={{ fontSize:12, padding:"5px 14px" }} onClick={() => setModalRev(true)}>+ Aggiungi</button>
+            <span className="storico-filtri">
+              {[["tutto","Tutto"],["revisione","Revisioni"],["manutenzione","Manutenzioni"],["stato","Stato componenti"]].map(([k,l]) => (
+                <button key={k} type="button" aria-pressed={filtroStorico===k}
+                  className={filtroStorico===k ? "vista-btn on" : "vista-btn"} onClick={() => setFiltroStorico(k)}>{l}</button>
+              ))}
+            </span>
+            <span style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              <button className="btn btn-success" style={{ fontSize:12, padding:"5px 14px" }} onClick={() => setModalRev(true)}>+ Revisione</button>
+              <button className="btn btn-secondary" style={{ fontSize:12, padding:"5px 14px" }} onClick={() => setModalMan(true)}>+ Manutenzione</button>
+            </span>
           </div>
-          {!revisioni.length ? (
-            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessuna revisione registrata</div>
+          {!storicoFiltrato.length ? (
+            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessun evento registrato</div>
           ) : (
             <div className="timeline" style={{ marginTop:8 }}>
-              {revisioni.map(r => {
-                const dotC = r.esito==="positivo"?"green":r.esito==="negativo"?"red":"amber";
-                return (
-                  <div key={r.id} className="timeline-item">
-                    <div className={`timeline-dot ${dotC}`}/>
-                    <div className="timeline-date">{formatData(r.dataRevisione)}</div>
-                    <div className="timeline-title">{(r.esito||"—").charAt(0).toUpperCase()+(r.esito||"").slice(1)}</div>
-                    <div className="timeline-sub">{r.tecnico||""}{r.ente?` · ${r.ente}`:""}{r.note?` — ${r.note}`:""}</div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB MANUTENZIONE */}
-      {tab==="manutenzione" && (
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Storico manutenzione ({manutenzioni.length})</span>
-            <button className="btn btn-secondary" style={{ fontSize:12, padding:"5px 14px" }} onClick={() => setModalMan(true)}>+ Aggiungi</button>
-          </div>
-          {!manutenzioni.length ? (
-            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessuna manutenzione registrata</div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Data</th><th>Tipo</th><th>Componente</th><th>Olio</th><th>Candela</th><th>Note</th></tr></thead>
-                <tbody>
-                  {manutenzioni.map(m => (
-                    <tr key={m.id}>
-                      <td style={{ whiteSpace:"nowrap" }}>{formatData(m.data)}</td>
-                      <td style={{ fontWeight:600 }}>{m.tipo}</td>
-                      <td>{m.componenteInteressato||"—"}</td>
-                      <td>{m.olio||"—"}</td>
-                      <td>{m.candela||"—"}</td>
-                      <td style={{ fontSize:12, color:"var(--text3)" }}>{m.note||"—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              {storicoFiltrato.map(({ tipo, voce: v }) => (
+                <div key={tipo + v.id} className="timeline-item">
+                  {tipo === "revisione" && <>
+                    <div className={`timeline-dot ${v.esito==="positivo"?"green":v.esito==="negativo"?"red":"amber"}`}/>
+                    <div className="timeline-date"><span className="storico-tipo rev">Revisione</span> {formatData(v.dataRevisione)}</div>
+                    <div className="timeline-title">{(v.esito||"—").charAt(0).toUpperCase()+(v.esito||"").slice(1)}</div>
+                    <div className="timeline-sub">{v.tecnico||""}{v.ente?` · ${v.ente}`:""}{v.note?` — ${v.note}`:""}</div>
+                  </>}
+                  {tipo === "manutenzione" && <>
+                    <div className="timeline-dot amber" style={{ animation:"none" }}/>
+                    <div className="timeline-date"><span className="storico-tipo man">Manutenzione</span> {formatData(v.data)}</div>
+                    <div className="timeline-title">{v.tipo}{v.componenteInteressato ? ` · ${v.componenteInteressato}` : ""}</div>
+                    <div className="timeline-sub">{[v.olio && `Olio ${v.olio}`, v.candela && `Candela ${v.candela}`, v.note].filter(Boolean).join(" — ") || "—"}</div>
+                  </>}
+                  {tipo === "stato" && <>
+                    <div className={`timeline-dot ${v.stato==="attivo"?"green":v.stato==="fuori_servizio"?"red":"amber"}`} style={{ animation:"none" }}/>
+                    <div className="timeline-date"><span className="storico-tipo stato">{ETICHETTA_STATO[v.stato] || v.stato}</span> {formatData(v.data)}</div>
+                    <div className="timeline-title">{v.componenteTipo}{v.componenteMatricola ? ` · ${v.componenteMatricola}` : ""}</div>
+                    <div className="timeline-sub">{[v.motivo, v.officina && `officina ${v.officina}`, v.note].filter(Boolean).join(" — ") || "—"}</div>
+                  </>}
+                </div>
+              ))}
             </div>
           )}
         </div>

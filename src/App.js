@@ -16,7 +16,7 @@ import Backup from "./pages/Backup";
 
 // Firebase
 import { getAllKits, cercaGlobale, getAllGruppiTaglio } from "./firebase/service";
-import { calcolaStato, calcolaStatoGT } from "./utils";
+import { daFare } from "./inventario";
 import "./App.css";
 
 // eslint-disable-next-line no-unused-vars
@@ -177,47 +177,9 @@ export default function App() {
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  // Badge critici
-  const criticiTotali = [
-    ...kits.filter(k => ["scaduto","critico","attenzione"].includes(calcolaStato(k))),
-    ...gruppiTaglio.filter(g => ["scaduto","critico","attenzione"].includes(calcolaStatoGT(g))),
-  ].length;
-
-  const daFareTotali = [
-    ...kits.filter(k => ["scaduto","critico"].includes(calcolaStato(k))),
-    ...gruppiTaglio.filter(g => ["scaduto","critico"].includes(calcolaStatoGT(g))),
-    ...kits.filter(k => k.stato === "in_revisione" && k.dataRientroStimata && (giorniAllaScadenza(k.dataRientroStimata)??0) < 0),
-  ].length;
-
-  const annoCorrente = new Date().getFullYear();
-  const acquistiTotali = [
-    ...kits.filter(k => k.stato === "fuori_uso" || (k.annoAcquisto && annoCorrente - k.annoAcquisto >= 10)),
-    ...gruppiTaglio.filter(g => g.stato === "fuori_uso" || (g.annoAcquisto && annoCorrente - g.annoAcquisto >= 10)),
-  ].length;
-
-  // Navbar semplificata per sistema
-  const navCuscini = [
-    { to:"/",          label:"Stato",      end:true },
-    { to:"/da-fare",   label:"Da fare",    badge: daFareTotali },
-    { to:"/kit",       label:"Kit" },
-    { to:"/mezzi",     label:"Mezzi" },
-    { to:"/archivio",  label:"Archivio" },
-    { to:"/acquisti",  label:"Acquisti",   badge: acquistiTotali },
-  ];
-  const navTaglio = [
-    { to:"/",          label:"Stato",      end:true },
-    { to:"/da-fare",   label:"Da fare",    badge: daFareTotali },
-    { to:"/gruppi-taglio", label:"Kit" },
-    { to:"/mezzi-taglio",  label:"Mezzi" },
-    { to:"/archivio",  label:"Archivio" },
-    { to:"/acquisti",  label:"Acquisti",   badge: acquistiTotali },
-  ];
-  const navItems = sistema === "taglio" ? navTaglio : navCuscini;
-
-  function giorniAllaScadenza(d) {
-    if (!d) return null;
-    return Math.floor((new Date(d) - new Date()) / 86400000);
-  }
+  // Voci "Da fare" per sistema: contatori sull'interruttore Cuscini | Taglio.
+  const nDaFareCuscini = daFare(kits, false).length;
+  const nDaFareTaglio  = daFare(gruppiTaglio, true).length;
 
   return (
     <BrowserRouter>
@@ -233,33 +195,17 @@ export default function App() {
 
         {/* TOPBAR */}
         <header className="topbar">
-          <div className="topbar-brand">
+          <NavLink to="/" end className="topbar-brand" style={{ textDecoration:"none", color:"inherit" }}>
             <img src="/logo78.png" alt="Logo 78"
               style={{ height:56, width:56, objectFit:"contain" }}/>
             <span>SICS — VVF Siena</span>
-          </div>
-
-          {/* Selettore sistema */}
-          <div className="sistema-selector">
-            <button
-              className={`sistema-btn ${sistema==="cuscini"?"active":""}`}
-              onClick={() => setSistema("cuscini")}>
-              Cuscini
-            </button>
-            <button
-              className={`sistema-btn taglio ${sistema==="taglio"?"active":""}`}
-              onClick={() => setSistema("taglio")}>
-              Taglio
-            </button>
-          </div>
+          </NavLink>
 
           <div className="topbar-right">
-            {criticiTotali > 0 && (
-              <span className="badge-critico">{criticiTotali} CRITICI</span>
-            )}
-            <button className="theme-toggle"
+            <NavLink to="/calendario" className={({ isActive }) => isActive ? "topbar-btn active" : "topbar-btn"}>Calendario</NavLink>
+            <button className="topbar-btn" title="Tema chiaro / scuro"
               onClick={() => setDarkMode(d => !d)}>
-              {darkMode ? "☀" : "☾"}
+              Tema
             </button>
             <AdminLink/>
           </div>
@@ -274,11 +220,8 @@ export default function App() {
           transition:"background .4s",
         }}/>
 
-        {/* TOGGLE VISTA */}
-        <nav className="navbar" style={{ padding: "8px 24px", gap: 8 }}>
-          <NavLink to="/" end className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>KIT</NavLink>
-          <NavLink to="/calendario" className={({ isActive }) => isActive ? "nav-item active" : "nav-item"}>Calendario</NavLink>
-        </nav>
+        <SistemaSwitch sistema={sistema} setSistema={setSistema}
+          nCuscini={nDaFareCuscini} nTaglio={nDaFareTaglio}/>
 
         {/* CONTENUTO */}
         <main className="main-content" style={{ paddingTop:16 }}>
@@ -336,12 +279,40 @@ export default function App() {
   );
 }
 
+// ── INTERRUTTORE CUSCINI | TAGLIO ───────────────────────────
+// Il contatore = voci "Da fare" del sistema, visibile anche quando si è sull'altro.
+function SistemaSwitch({ sistema, setSistema, nCuscini, nTaglio }) {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Aprendo un kit (anche da link diretto) l'interruttore segue il sistema della pagina.
+  useEffect(() => {
+    if (location.pathname.startsWith("/kit/")) setSistema("cuscini");
+    else if (location.pathname.startsWith("/gruppi-taglio/")) setSistema("taglio");
+  }, [location.pathname]);
+  function scegli(s) {
+    setSistema(s);
+    if (location.pathname !== "/") navigate("/");
+  }
+  return (
+    <div className="sistema-switch">
+      {[["cuscini", "Cuscini", nCuscini], ["taglio", "Taglio", nTaglio]].map(([key, label, n]) => (
+        <button key={key} type="button" aria-pressed={sistema === key}
+          className={`switch-btn ${key}${sistema === key ? " active" : ""}`}
+          onClick={() => scegli(key)}>
+          {label}
+          {n > 0 && <span className="switch-cnt" title={`${n} da fare`}>{n}</span>}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 // ── LINK AMMINISTRAZIONE ────────────────────────────────────
 function AdminLink() {
   const navigate = useNavigate();
   return (
-    <button className="theme-toggle" title="Amministrazione"
-      onClick={() => navigate("/admin/rinumerazione")}>⚙</button>
+    <button className="topbar-btn" title="Amministrazione"
+      onClick={() => navigate("/admin/rinumerazione")}>Admin</button>
   );
 }
 

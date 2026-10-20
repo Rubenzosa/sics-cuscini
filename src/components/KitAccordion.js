@@ -1,8 +1,10 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { statoLabel, statoLabelBreve, formatData, componentiFuoriUso, componentiNonOperativiGT, componenteAttivoGT } from "../utils";
+import Cartellino from "./Cartellino";
 
-export default function KitAccordion({ item, sistema, stato, giorni, scad, open, onToggle }) {
+// vista "targa": al posto della scadenza mostra composizione del kit (n. componenti · bar/marca).
+export default function KitAccordion({ item, sistema, stato, giorni, scad, open, onToggle, vista }) {
   const isTaglio = sistema === "taglio";
   const detailPath = isTaglio ? `/gruppi-taglio/${item.id}` : `/kit/${item.id}`;
   const comps = item.componenti || [];
@@ -21,26 +23,30 @@ export default function KitAccordion({ item, sistema, stato, giorni, scad, open,
     <div className="reg-item">
       <button onClick={onToggle} className={open ? "reg-row reg-cols open" : "reg-row reg-cols"}>
         <span className={`reg-bar ${tono}`}/>
-        <span className="reg-num">{item.numero}</span>
+        <Cartellino numero={item.numero} targa={item.mezzo}/>
         <span className="reg-mid">
           <span className="reg-nome">
             {item.nome}
             {nFU > 0 && <span className="reg-warn" title={titoloFU}>−{nFU} comp.</span>}
           </span>
-          <span className="reg-sub">
-            {item.mezzo || "—"}
-            {marca && <span className="reg-marca"> · {marca}</span>}
-          </span>
+          {marca && <span className="reg-sub">{marca}</span>}
         </span>
         <span className="reg-loc">{item.dislocazione || "—"}</span>
-        <span className="reg-scad">
-          <span className="reg-data">{scad && scad !== "NO REVISIONE" ? formatData(scad) : "—"}</span>
-          <span className={`reg-gg ${tono}`}>
-            {giorni === null || giorni === undefined
-              ? (scad === "NO REVISIONE" ? "no revisione" : "senza data")
-              : giorni < 0 ? `${Math.abs(giorni)} gg fa` : `fra ${giorni} gg`}
+        {vista === "targa" ? (
+          <span className="reg-scad">
+            <span className="reg-data">{comps.length} comp.</span>
+            <span className="reg-gg n">{marca || "—"}</span>
           </span>
-        </span>
+        ) : (
+          <span className="reg-scad">
+            <span className="reg-data">{scad && scad !== "NO REVISIONE" ? formatData(scad) : "—"}</span>
+            <span className={`reg-gg ${tono}`}>
+              {giorni === null || giorni === undefined
+                ? (scad === "NO REVISIONE" ? "no revisione" : "senza data")
+                : giorni < 0 ? `${Math.abs(giorni)} gg fa` : `fra ${giorni} gg`}
+            </span>
+          </span>
+        )}
         <span className="reg-stato">
           <span className={`reg-chip ${tono}`}><span className="reg-dot"/>{statoLabelBreve(stato)}</span>
         </span>
