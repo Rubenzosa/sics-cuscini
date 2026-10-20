@@ -1432,9 +1432,12 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
 }
 .dafare-row:hover, .mat-row:hover { transform: translateY(-1px); }
 .dafare-row:focus-visible, .mat-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.dafare-mid, .mat-mid { flex: 1; min-width: 0; }
-.dafare-titolo { display: block; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.dafare-sub { display: block; font-size: 11px; color: var(--text2); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mat-mid { flex: 1; min-width: 0; }
+.dafare-titolo { flex: 1; min-width: 0; font-size: 13px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dafare-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.dafare-dot.b { background: var(--red); }
+.dafare-dot.w { background: var(--amber); }
+.dafare-chev { color: var(--text3); font-weight: 900; font-size: 16px; }
 .dafare-vuoto {
   padding: 14px; border-radius: 12px; box-shadow: var(--neu-in);
   font-size: 13px; font-weight: 700; color: var(--green-text); text-align: center;
@@ -1464,7 +1467,6 @@ tr:hover td { background: var(--bg3); cursor: pointer; }
 
 @media (max-width: 600px) {
   .dafare-row, .mat-row { gap: 9px; padding: 8px 10px; }
-  .dafare-row .reg-chip { padding: 4px 7px; }
   .vista-lbl { display: none; }
 }
 

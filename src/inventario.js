@@ -30,9 +30,9 @@ export function daFare(items, isTaglio) {
     const scad = isTaglio ? prossimaRevisioneGT(item) : item.dataRevisione;
     const giorni = giorniAllaScadenza(scad);
     if (stato === "scaduto") {
-      righe.push({ item, tipo: "scaduta", titolo: "Revisione scaduta", dettaglio: "scaduta il " + formatData(scad), giorni });
+      righe.push({ item, tipo: "scaduta", titolo: "Revisione scaduta", breve: "Revisione scaduta", dettaglio: "scaduta il " + formatData(scad), giorni });
     } else if (stato === "critico" || stato === "attenzione") {
-      righe.push({ item, tipo: "in_scadenza", titolo: "Revisione in scadenza", dettaglio: "scade il " + formatData(scad), giorni });
+      righe.push({ item, tipo: "in_scadenza", titolo: "Revisione in scadenza", breve: `Revisione fra ${giorni} gg`, dettaglio: "scade il " + formatData(scad), giorni });
     }
     const fermi = (item.componenti || []).filter(c => isTaglio ? !componenteAttivoGT(c) : c.fuoriUso);
     if (fermi.length) {
@@ -41,13 +41,16 @@ export function daFare(items, isTaglio) {
         ? (n === 1 ? "1 componente fermo" : `${n} componenti fermi`)
         : (n === 1 ? "1 componente fuori uso" : `${n} componenti fuori uso`);
       let dettaglio = "vedi componenti";
+      let breve = titolo;
       if (n === 1) {
         const c = fermi[0];
         const codice = isTaglio ? c.matricola : (c.matricolaLucca || c.matricola);
         const cosa = isTaglio ? (c.statoOperativo === "in_revisione" ? "in revisione" : "fuori servizio") : "da sostituire";
         dettaglio = `${c.tipo} ${codice || ""} — ${cosa}`.replace("  ", " ");
+        const nome = (c.tipo || "Componente").toLowerCase();
+        breve = `${nome.charAt(0).toUpperCase()}${nome.slice(1)} ${isTaglio ? "fermo" : "fuori uso"}`;
       }
-      righe.push({ item, tipo: "fermi", titolo, dettaglio, giorni });
+      righe.push({ item, tipo: "fermi", titolo, breve, dettaglio, giorni });
     }
   });
   return righe.sort((a, b) =>

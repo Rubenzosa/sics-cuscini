@@ -65,6 +65,16 @@ describe("daFare", () => {
     expect(r[0].titolo).toBe("1 componente fermo");
     expect(r[0].dettaglio).toBe("CENTRALINA 85228 — in revisione");
   });
+  test("frase corta per la riga compatta", () => {
+    const r = daFare([
+      { id:"s", stato:"attivo", dataRevisione: tra(-3), componenti:[{ tipo:"RIDUTTORE", fuoriUso:true }] },
+      { id:"p", stato:"attivo", dataRevisione: tra(20), componenti:[{ tipo:"TUBO", fuoriUso:true },{ tipo:"TUBO", fuoriUso:true }] },
+    ], false);
+    expect(r.slice(0, 3).map(x => x.breve)).toEqual(["Revisione scaduta", "Riduttore fuori uso", "2 componenti fuori uso"]);
+    expect(r[3].breve).toMatch(/^Revisione fra (19|20) gg$/); // giorniAllaScadenza arrotonda per difetto
+    const gt = daFare([{ stato:"attivo", componenti:[{ tipo:"PISTONE ELETTRICO", matricola:"1", prossimaRevisione: tra(400), statoOperativo:"fuori_servizio" }] }], true);
+    expect(gt[0].breve).toBe("Pistone elettrico fermo");
+  });
   test("taglio: tutti i componenti fermi → solo riga fermi", () => {
     const gt = { stato:"attivo", componenti:[{ tipo:"CESOIA", matricola:"1", prossimaRevisione: tra(-3), statoOperativo:"fuori_servizio" }] };
     expect(daFare([gt], true).map(x => x.tipo)).toEqual(["fermi"]);
