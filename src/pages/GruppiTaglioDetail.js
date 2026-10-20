@@ -33,6 +33,8 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
 
   const [tab, setTab]             = useState("componenti");
   const [filtroStorico, setFiltroStorico] = useState("tutto");
+  const [compAperto, setCompAperto] = useState(null); // indice componente aperto a schermo pieno
+  useEffect(() => { window.scrollTo(0, 0); }, [compAperto]);
   const [revisioni, setRevisioni] = useState([]);
   const [manutenzioni, setManutenzioni] = useState([]);
   const [modalRev, setModalRev]   = useState(false);
@@ -137,7 +139,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   ];
 
   return (
-    <div>
+    <div className={compAperto !== null ? "focus-comp" : undefined}>
       {/* Barra azioni */}
       <div className="kit-azioni">
         <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Gruppi da taglio</button>
@@ -286,24 +288,47 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
       {/* TAB COMPONENTI */}
       {tab==="componenti" && (
         <div className="card">
-          <div className="card-header">
-            <span className="card-title">Componenti ({(gt.componenti||[]).length})</span>
-            <span style={{ fontSize:11, color:"var(--text3)" }}>Un componente fermo non fa scadere il kit</span>
-          </div>
+          {compAperto === null ? (
+            <div className="card-header">
+              <span className="card-title">Componenti ({(gt.componenti||[]).length})</span>
+              <span style={{ fontSize:11, color:"var(--text3)" }}>Un componente fermo non fa scadere il kit</span>
+            </div>
+          ) : (
+            <button className="btn btn-secondary" style={{ marginBottom:12 }} onClick={() => setCompAperto(null)}>‹ Tutti i componenti</button>
+          )}
           {GRUPPI_COMP.map(({ label, types }) => {
             const items = (gt.componenti||[]).filter(c => types.includes(c.tipo?.trim()));
             if (!items.length) return null;
+            if (compAperto !== null && !items.some(c => (gt.componenti||[]).indexOf(c) === compAperto)) return null;
             return (
               <div key={label} style={{ marginBottom:20 }}>
-                <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>
-                  {label} ({items.length})
-                </div>
+                {compAperto === null && (
+                  <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>
+                    {label} ({items.length})
+                  </div>
+                )}
                 {items.map(c => {
                   const ri      = (gt.componenti||[]).indexOf(c);
                   const attivo  = componenteAttivoGT(c);
                   const inRev   = c.statoOperativo === "in_revisione";
                   const storia  = riepilogoFermiComponente(statiComp, c, ri);
                   const gg      = attivo ? giorniAllaScadenza(c.prossimaRevisione) : null;
+                  // Elenco corto: una riga per componente; al tocco resta solo la sua scheda completa.
+                  if (compAperto === null) {
+                    const tono = !attivo ? (inRev ? "w" : "b") : gg === null ? "n" : gg < 0 ? "b" : gg <= 90 ? "w" : "ok";
+                    return (
+                      <button key={ri} type="button" className="comp-row" onClick={() => setCompAperto(ri)}>
+                        <span className={`comp-dot ${tono}`}/>
+                        <span className="comp-mid">
+                          <span className="comp-tipo">{c.tipo}</span>
+                          <span className="comp-sub">{!attivo ? (inRev ? "In revisione" : "Fuori servizio") : (c.modello || "—")}</span>
+                        </span>
+                        <span className="comp-mat">{c.matricola || "n.d."}</span>
+                        <span className="comp-chev">›</span>
+                      </button>
+                    );
+                  }
+                  if (ri !== compAperto) return null;
                   const ggClass = gg === null ? "" : gg < 0 ? "bad" : gg <= 90 ? "warn" : "ok";
                   // La barra laterale segue lo stato operativo; se il componente e' attivo segue la scadenza.
                   const classe  = !attivo ? (inRev ? "gtc rev" : "gtc ko")
@@ -397,7 +422,7 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
             );
           })}
 
-          {statiComp.length > 0 && (
+          {statiComp.length > 0 && compAperto === null && (
             <div style={{ marginTop:24, borderTop:"1px solid var(--border)", paddingTop:14 }}>
               <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:".06em", marginBottom:8 }}>
                 Storico guasti e fermi ({statiComp.length})
