@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import {
   deleteKit, sostituisciComponente, getStoricoSostituzioni,
   aggiungiRevisione, getRevisioni, spostaKit, getStoricoSpostamenti,
@@ -13,6 +13,7 @@ import FotoComponente from "../components/FotoComponente";
 import Cartellino from "../components/Cartellino";
 import MenuAzioni from "../components/MenuAzioni";
 import { unisciStorico } from "../storico";
+import { gestoriSwipe } from "../swipe";
 import { suggerisciMatricola } from "../numerazione";
 
 const TIPI_COMP = ["CUSCINO 30X30","CUSCINO 35X35","CUSCINO 37X37","CUSCINO 38X38","CUSCINO 40X40","CUSCINO 45X45","CUSCINO 47X52","CUSCINO 48X58","CUSCINO 50X50","CUSCINO 55X55","CUSCINO 60X60","CUSCINO 65X65","CUSCINO 100X32","CENTRALINA","RIDUTTORE","TUBO","TUBO 2MT","TUBO 5MT","RUB. VALVOLARE"];
@@ -23,6 +24,7 @@ const DEST_COLOR = {
   magazzino: { bg:"var(--blue-bg)", color:"var(--blue-text)" },
   revisione: { bg:"var(--amber-bg)", color:"var(--amber-text)" },
 };
+const TABS_KIT = ["componenti", "dati", "storico", "documenti"];
 const ESITO_COLOR = { positivo:"green", condizionato:"amber", negativo:"red" };
 
 function fmtSize(b) {
@@ -233,7 +235,6 @@ export default function KitDetail({ kits, reload }) {
 
   const comps = kit.componenti || [];
   const nFuoriUso = componentiFuoriUso(kit);
-  const fuoriUsoUnico = comps.find(c => c.fuoriUso);
   const storico = unisciStorico([
     { tipo:"revisione",    voci: revisioni,    data: v => v.dataRevisione },
     { tipo:"sostituzione", voci: storicoSost,  data: v => v.dataOperazione },
@@ -242,59 +243,40 @@ export default function KitDetail({ kits, reload }) {
   const storicoFiltrato = filtroStorico === "tutto" ? storico : storico.filter(e => e.tipo === filtroStorico);
 
   return (
-    <div className={compAperto !== null ? "focus-comp" : undefined}>
-      {/* Barra azioni */}
+    <div className={compAperto !== null ? "focus-comp kit-pagina" : "kit-pagina"} {...(compAperto === null ? gestoriSwipe(TABS_KIT, tab, setTab) : {})}>
+      {/* Una riga di azioni: il resto nel menu ⋯ */}
       <div className="kit-azioni">
-        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Kit cuscini</button>
+        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Kit</button>
         <span style={{ flex:1 }}/>
         <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
-        <button className="btn btn-secondary" onClick={() => setModalSpost(true)}>⇄ Sposta</button>
-        <Link to={`/kit/${kit.id}/modifica`} className="btn btn-secondary">Modifica</Link>
-        <MenuAzioni etichetta="⋯" voci={[{ label:"Elimina kit", onClick: handleDelete, danger:true }]}/>
+        <MenuAzioni etichetta="⋯" voci={[
+          { label:"Sposta kit", onClick: () => setModalSpost(true) },
+          { label:"Modifica", onClick: () => navigate(`/kit/${kit.id}/modifica`) },
+          { label:"Elimina kit", onClick: handleDelete, danger:true },
+        ]}/>
       </div>
 
-      {/* Testata: chi è il kit, stato, scadenza */}
+      {/* Testata compatta: chi è il kit + scadenza e componenti in una riga */}
       <div className="kit-hero">
         <Cartellino grande numero={kit.numero} targa={kit.mezzo}/>
         <div className="kit-hero-mid">
-          <h1 className="kit-hero-nome">{kit.nome}</h1>
-          <div className="kit-hero-sub">{kit.dislocazione || "—"} · {kit.bar} bar · {comps.length} componenti</div>
-          <div className="kit-hero-chips">
+          <div className="kit-hero-riga">
+            <h1 className="kit-hero-nome">{kit.nome}</h1>
             <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
-            {nFuoriUso > 0 && <span className="pill attenzione">Kit incompleto</span>}
+          </div>
+          <div className="kit-hero-sub">{kit.dislocazione || "—"} · {kit.bar} bar</div>
+          <div className="kit-hero-strip">
+            Rev. {formatData(kit.dataRevisione)}
+            {giorni !== null && <span className={giorni < 0 ? "neg" : giorni <= 90 ? "att" : undefined}> ({giorni < 0 ? `scaduta da ${Math.abs(giorni)} gg` : `fra ${giorni} gg`})</span>}
+            {" · "}{comps.length - nFuoriUso}/{comps.length} comp.
+            {nFuoriUso > 0 && <span className="neg"> · {nFuoriUso} fuori uso</span>}
           </div>
         </div>
       </div>
 
-      <div className="kit-kpis">
-        <div className="kit-kpi">
-          <div className="kit-kpi-l">Prossima revisione</div>
-          <div className="kit-kpi-v">{formatData(kit.dataRevisione)}</div>
-          <div className="kit-kpi-s">{giorni === null ? "—" : giorni < 0 ? `scaduta da ${Math.abs(giorni)} giorni` : `fra ${giorni} giorni`}</div>
-        </div>
-        <div className="kit-kpi">
-          <div className="kit-kpi-l">Ultima revisione</div>
-          <div className="kit-kpi-v">{formatData(revisioni[0]?.dataRevisione)}</div>
-          <div className="kit-kpi-s">Esito: {revisioni[0]?.esito || kit.ultimaRevisioneEsito || "—"}</div>
-        </div>
-        <div className="kit-kpi">
-          <div className="kit-kpi-l">Componenti</div>
-          <div className="kit-kpi-v">{comps.length - nFuoriUso} / {comps.length}</div>
-          <div className="kit-kpi-s" style={nFuoriUso ? { color:"var(--red-text)", fontWeight:700 } : undefined}>{nFuoriUso ? `${nFuoriUso} fuori uso` : "tutti operativi"}</div>
-        </div>
-      </div>
-
-      {stato === "scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>⚠ Scaduto da {Math.abs(giorni)} giorni — revisione urgente</div>}
-      {stato === "critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>⏱ Scade tra {giorni} giorni — pianifica revisione</div>}
-      {nFuoriUso > 0 && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>
-        Kit non completo — {nFuoriUso === 1
-          ? `${fuoriUsoUnico.tipo} ${fuoriUsoUnico.matricolaLucca || ""} fuori uso, da sostituire.`
-          : `${nFuoriUso} componenti fuori uso da sostituire.`} Revisione valida sul resto del kit.
-      </div>}
-
-      {/* Pannelli */}
+      {/* Pannelli: su telefono barra fissa in basso; swipe laterale per cambiare */}
       <div className="kit-tabs">
-        {[["componenti",`Componenti (${comps.length})`],["dati","Dati kit"],["storico",`Storico (${storico.length})`],["documenti", kit.stato==="fuori_uso"?"Allegati":"Documenti"]].map(([key, label]) => (
+        {[["componenti","Componenti"],["dati","Dati"],["storico","Storico"],["documenti", kit.stato==="fuori_uso"?"Allegati":"Documenti"]].map(([key, label]) => (
           <button key={key} type="button" aria-pressed={tab===key}
             className={tab===key ? "kit-tab on" : "kit-tab"} onClick={() => setTab(key)}>{label}</button>
         ))}

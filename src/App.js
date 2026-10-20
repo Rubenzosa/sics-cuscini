@@ -293,6 +293,8 @@ function SistemaSwitch({ sistema, setSistema, nCuscini, nTaglio }) {
     setSistema(s);
     if (location.pathname !== "/") navigate("/");
   }
+  // Dentro un kit il sistema è già noto: l'interruttore toglierebbe solo spazio (si torna col "‹").
+  if (/^\/(kit|gruppi-taglio)\/[^/]+$/.test(location.pathname)) return null;
   return (
     <div className="sistema-switch">
       {[["cuscini", "Cuscini", nCuscini], ["taglio", "Taglio", nTaglio]].map(([key, label, n]) => (
