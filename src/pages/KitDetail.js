@@ -124,6 +124,8 @@ export default function KitDetail({ kits, reload }) {
 
   const [tab, setTab] = useState("componenti");
   const [filtroStorico, setFiltroStorico] = useState("tutto");
+  const [compAperto, setCompAperto] = useState(null); // indice componente aperto a schermo pieno
+  useEffect(() => { window.scrollTo(0, 0); }, [compAperto]);
   const [modalSost, setModalSost] = useState(null);
   const [modalRev, setModalRev] = useState(false);
   const [modalSpost, setModalSpost] = useState(false);
@@ -240,7 +242,7 @@ export default function KitDetail({ kits, reload }) {
   const storicoFiltrato = filtroStorico === "tutto" ? storico : storico.filter(e => e.tipo === filtroStorico);
 
   return (
-    <div>
+    <div className={compAperto !== null ? "focus-comp" : undefined}>
       {/* Barra azioni */}
       <div className="kit-azioni">
         <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Kit cuscini</button>
@@ -315,17 +317,35 @@ export default function KitDetail({ kits, reload }) {
       {/* TAB: COMPONENTI */}
       {tab === "componenti" && (
         <div className="card">
-          <div className="card-header">
-            <span className="card-title">Componenti ({kit.componenti?.length||0})</span>
-            <span style={{ fontSize:11, color:"var(--text3)" }}>La matricola Lucca è quella incisa sul cuscino</span>
-          </div>
+          {compAperto === null ? (
+            <div className="card-header">
+              <span className="card-title">Componenti ({kit.componenti?.length||0})</span>
+              <span style={{ fontSize:11, color:"var(--text3)" }}>La matricola Lucca è quella incisa sul cuscino</span>
+            </div>
+          ) : (
+            <button className="btn btn-secondary" style={{ marginBottom:12 }} onClick={() => setCompAperto(null)}>‹ Tutti i componenti</button>
+          )}
           {gruppi.map(({ titolo, items }) => {
             if (!items.length) return null;
+            if (compAperto !== null && !items.some(c => (kit.componenti||[]).indexOf(c) === compAperto)) return null;
             return (
               <div key={titolo} style={{ marginBottom:20 }}>
-                <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>{titolo} ({items.length})</div>
+                {compAperto === null && <div style={{ fontSize:11, fontWeight:800, color:"var(--text3)", textTransform:"uppercase", letterSpacing:"0.06em", marginBottom:8 }}>{titolo} ({items.length})</div>}
                 {items.map(c => {
                   const ri = (kit.componenti||[]).indexOf(c);
+                  // Elenco corto: una riga per componente; al tocco resta solo la sua scheda completa.
+                  if (compAperto === null) return (
+                    <button key={ri} type="button" className="comp-row" onClick={() => setCompAperto(ri)}>
+                      <span className={`comp-dot ${c.fuoriUso ? "b" : "ok"}`}/>
+                      <span className="comp-mid">
+                        <span className="comp-tipo">{c.tipo}</span>
+                        <span className="comp-sub">{c.fuoriUso ? "Fuori uso" : (c.modello || "—")}</span>
+                      </span>
+                      <span className="comp-mat">{c.matricolaLucca || "n.d."}</span>
+                      <span className="comp-chev">›</span>
+                    </button>
+                  );
+                  if (ri !== compAperto) return null;
                   return (
                     <div key={ri} className={c.fuoriUso ? "gtc rev" : "gtc"}>
                       <div className="gtc-top">
