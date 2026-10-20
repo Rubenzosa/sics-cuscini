@@ -284,6 +284,11 @@ export default function App() {
 function SistemaSwitch({ sistema, setSistema, nCuscini, nTaglio }) {
   const navigate = useNavigate();
   const location = useLocation();
+  // Aprendo un kit (anche da link diretto) l'interruttore segue il sistema della pagina.
+  useEffect(() => {
+    if (location.pathname.startsWith("/kit/")) setSistema("cuscini");
+    else if (location.pathname.startsWith("/gruppi-taglio/")) setSistema("taglio");
+  }, [location.pathname]);
   function scegli(s) {
     setSistema(s);
     if (location.pathname !== "/") navigate("/");

@@ -10,6 +10,9 @@ import { calcolaStato, statoLabel, formatData, giorniAllaScadenza, componentiFuo
 import { fotoDelComponente } from "../foto";
 import Documenti from "../components/Documenti";
 import FotoComponente from "../components/FotoComponente";
+import Cartellino from "../components/Cartellino";
+import MenuAzioni from "../components/MenuAzioni";
+import { unisciStorico } from "../storico";
 import { suggerisciMatricola } from "../numerazione";
 
 const TIPI_COMP = ["CUSCINO 30X30","CUSCINO 35X35","CUSCINO 37X37","CUSCINO 38X38","CUSCINO 40X40","CUSCINO 45X45","CUSCINO 47X52","CUSCINO 48X58","CUSCINO 50X50","CUSCINO 55X55","CUSCINO 60X60","CUSCINO 65X65","CUSCINO 100X32","CENTRALINA","RIDUTTORE","TUBO","TUBO 2MT","TUBO 5MT","RUB. VALVOLARE"];
@@ -119,7 +122,8 @@ export default function KitDetail({ kits, reload }) {
   const navigate = useNavigate();
   const kit = kits.find(k => k.id === id);
 
-  const [tab, setTab] = useState("info");
+  const [tab, setTab] = useState("componenti");
+  const [filtroStorico, setFiltroStorico] = useState("tutto");
   const [modalSost, setModalSost] = useState(null);
   const [modalRev, setModalRev] = useState(false);
   const [modalSpost, setModalSpost] = useState(false);
@@ -151,7 +155,7 @@ export default function KitDetail({ kits, reload }) {
 
   if (!kit) return (
     <div style={{ textAlign:"center", padding:60, color:"var(--text3)" }}>
-      Kit non trovato. <button className="card-action" onClick={() => navigate("/kit")}>Torna alla lista</button>
+      Kit non trovato. <button className="card-action" onClick={() => navigate("/")}>Torna alla lista</button>
     </div>
   );
 
@@ -160,7 +164,7 @@ export default function KitDetail({ kits, reload }) {
 
   async function handleDelete() {
     if (window.confirm(`Eliminare definitivamente il Kit ${kit.numero} — ${kit.nome}?`)) {
-      await deleteKit(kit.id); await reload(); navigate("/kit");
+      await deleteKit(kit.id); await reload(); navigate("/");
     }
   }
 
@@ -225,69 +229,85 @@ export default function KitDetail({ kits, reload }) {
     { titolo:"Rubinetti valvolari", items: kit.componenti?.filter(c => c.tipo === "RUB. VALVOLARE") || [] },
   ];
 
+  const comps = kit.componenti || [];
+  const nFuoriUso = componentiFuoriUso(kit);
+  const fuoriUsoUnico = comps.find(c => c.fuoriUso);
+  const storico = unisciStorico([
+    { tipo:"revisione",    voci: revisioni,    data: v => v.dataRevisione },
+    { tipo:"sostituzione", voci: storicoSost,  data: v => v.dataOperazione },
+    { tipo:"spostamento",  voci: storicoSpost, data: v => v.data },
+  ]);
+  const storicoFiltrato = filtroStorico === "tutto" ? storico : storico.filter(e => e.tipo === filtroStorico);
+
   return (
     <div>
-      <div className="page-header">
-        <div style={{ display:"flex", alignItems:"center", gap:12, flexWrap:"wrap" }}>
-          <button className="btn btn-secondary" onClick={() => navigate("/kit")}>← Indietro</button>
-          <h1 className="page-title">Kit {kit.numero} — {kit.nome}</h1>
-          <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
+      {/* Barra azioni */}
+      <div className="kit-azioni">
+        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Kit cuscini</button>
+        <span style={{ flex:1 }}/>
+        <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
+        <button className="btn btn-secondary" onClick={() => setModalSpost(true)}>⇄ Sposta</button>
+        <Link to={`/kit/${kit.id}/modifica`} className="btn btn-secondary">Modifica</Link>
+        <MenuAzioni etichetta="⋯" voci={[{ label:"Elimina kit", onClick: handleDelete, danger:true }]}/>
+      </div>
+
+      {/* Testata: chi è il kit, stato, scadenza */}
+      <div className="kit-hero">
+        <Cartellino grande numero={kit.numero} targa={kit.mezzo}/>
+        <div className="kit-hero-mid">
+          <h1 className="kit-hero-nome">{kit.nome}</h1>
+          <div className="kit-hero-sub">{kit.dislocazione || "—"} · {kit.bar} bar · {comps.length} componenti</div>
+          <div className="kit-hero-chips">
+            <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
+            {nFuoriUso > 0 && <span className="pill attenzione">Kit incompleto</span>}
+          </div>
         </div>
-        <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-          <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
-          <button className="btn btn-secondary" onClick={() => setModalSpost(true)}>⇄ Sposta kit</button>
-          <Link to={`/kit/${kit.id}/modifica`} className="btn btn-secondary">Modifica</Link>
-          <button className="btn btn-danger" onClick={handleDelete}>Elimina</button>
+      </div>
+
+      <div className="kit-kpis">
+        <div className="kit-kpi">
+          <div className="kit-kpi-l">Prossima revisione</div>
+          <div className="kit-kpi-v">{formatData(kit.dataRevisione)}</div>
+          <div className="kit-kpi-s">{giorni === null ? "—" : giorni < 0 ? `scaduta da ${Math.abs(giorni)} giorni` : `fra ${giorni} giorni`}</div>
+        </div>
+        <div className="kit-kpi">
+          <div className="kit-kpi-l">Ultima revisione</div>
+          <div className="kit-kpi-v">{formatData(revisioni[0]?.dataRevisione)}</div>
+          <div className="kit-kpi-s">Esito: {revisioni[0]?.esito || kit.ultimaRevisioneEsito || "—"}</div>
+        </div>
+        <div className="kit-kpi">
+          <div className="kit-kpi-l">Componenti</div>
+          <div className="kit-kpi-v">{comps.length - nFuoriUso} / {comps.length}</div>
+          <div className="kit-kpi-s" style={nFuoriUso ? { color:"var(--red-text)", fontWeight:700 } : undefined}>{nFuoriUso ? `${nFuoriUso} fuori uso` : "tutti operativi"}</div>
         </div>
       </div>
 
       {stato === "scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>⚠ Scaduto da {Math.abs(giorni)} giorni — revisione urgente</div>}
       {stato === "critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>⏱ Scade tra {giorni} giorni — pianifica revisione</div>}
-      {componentiFuoriUso(kit) > 0 && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>Kit non completo — {componentiFuoriUso(kit)} componente/i fuori uso da sostituire. Revisione valida sul resto del kit.</div>}
+      {nFuoriUso > 0 && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>
+        Kit non completo — {nFuoriUso === 1
+          ? `${fuoriUsoUnico.tipo} ${fuoriUsoUnico.matricolaLucca || ""} fuori uso, da sostituire.`
+          : `${nFuoriUso} componenti fuori uso da sostituire.`} Revisione valida sul resto del kit.
+      </div>}
 
-      {/* TAB NAV */}
-      <div style={{ display:"flex", gap:2, marginBottom:16, borderBottom:"2px solid var(--border)", overflowX:"auto", WebkitOverflowScrolling:"touch" }}>
-        {[["info","Informazioni"],["componenti",`Componenti (${kit.componenti?.length||0})`],["revisioni",`Revisioni (${revisioni.length})`],["sostituzioni",`Sostituzioni (${storicoSost.length})`],["spostamenti",`Spostamenti (${storicoSpost.length})`],["documenti", kit.stato==="fuori_uso"?"Allegati":"Documenti"]].map(([key, label]) => (
-          <button key={key} onClick={() => setTab(key)} style={{ background:"none", border:"none", padding:"10px 16px", fontSize:13, fontWeight:tab===key?700:500, color:tab===key?"var(--text)":"var(--text3)", borderBottom:tab===key?"2px solid var(--accent)":"2px solid transparent", cursor:"pointer", fontFamily:"inherit", marginBottom:-2 }}>
-            {label}
-          </button>
+      {/* Pannelli */}
+      <div className="kit-tabs">
+        {[["componenti",`Componenti (${comps.length})`],["dati","Dati kit"],["storico",`Storico (${storico.length})`],["documenti", kit.stato==="fuori_uso"?"Allegati":"Documenti"]].map(([key, label]) => (
+          <button key={key} type="button" aria-pressed={tab===key}
+            className={tab===key ? "kit-tab on" : "kit-tab"} onClick={() => setTab(key)}>{label}</button>
         ))}
       </div>
 
-      {/* TAB: INFO */}
-      {tab === "info" && (
-        <div className="two-col">
-          <div className="card">
-            <div className="card-header"><span className="card-title">Dati kit</span></div>
-            <table style={{ width:"100%" }}>
-              <tbody>
-                {[["Numero kit",kit.numero],["Nome / Mezzo",kit.nome],["Targa",kit.mezzo],["Tipo mezzo",kit.tipoMezzo||"—"],["Pressione",`${kit.bar} bar`],["Anno acquisto",kit.annoAcquisto],["Data acquisto",formatData(kit.dataAcquisto)],["Dislocazione",kit.dislocazione||"—"],["Ultima revisione",formatData(kit.dataRevisione)],["Scade tra",giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],["Tecnico ultimo collaudo",kit.ultimaRevisioneTecnico||"—"],["Esito ultimo collaudo",kit.ultimaRevisioneEsito||"—"],["Totale componenti",kit.componenti?.length||0]].map(([label,val]) => (
-                  <tr key={label}>
-                    <td style={{ color:"var(--text3)", fontSize:12, width:"42%", padding:"7px 0", borderBottom:"1px solid var(--border)" }}>{label}</td>
-                    <td style={{ fontWeight:500, fontSize:13, padding:"7px 0", borderBottom:"1px solid var(--border)" }}>{val}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* TIMELINE revisioni nel tab info */}
-          <div className="card">
-            <div className="card-header"><span className="card-title">Timeline revisioni</span></div>
-            {revisioni.length === 0 ? (
-              <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:20 }}>Nessuna revisione registrata</div>
-            ) : (
-              <div className="timeline">
-                {revisioni.slice(0,5).map(r => (
-                  <div key={r.id} className="timeline-item">
-                    <div className={`timeline-dot ${ESITO_COLOR[r.esito]||"gray"}`}/>
-                    <div className="timeline-date">{formatData(r.dataRevisione)}</div>
-                    <div className="timeline-title">{r.esito ? r.esito.charAt(0).toUpperCase()+r.esito.slice(1) : "—"}</div>
-                    <div className="timeline-sub">{r.tecnico||""}{r.ente?` · ${r.ente}`:""}{r.note?` — ${r.note}`:""}</div>
-                  </div>
-                ))}
+      {/* PANNELLO: DATI KIT */}
+      {tab === "dati" && (
+        <div className="card">
+          <div className="dati-grid">
+            {[["Numero kit",kit.numero],["Nome / Mezzo",kit.nome],["Targa",kit.mezzo],["Tipo mezzo",kit.tipoMezzo||"—"],["Pressione",`${kit.bar} bar`],["Anno acquisto",kit.annoAcquisto],["Data acquisto",formatData(kit.dataAcquisto)],["Dislocazione",kit.dislocazione||"—"],["Ultima revisione",formatData(kit.dataRevisione)],["Scade tra",giorni!==null?(giorni<0?`SCADUTO (${Math.abs(giorni)}gg fa)`:`${giorni} giorni`):"N/D"],["Tecnico ultimo collaudo",kit.ultimaRevisioneTecnico||"—"],["Esito ultimo collaudo",kit.ultimaRevisioneEsito||"—"],["Totale componenti",comps.length]].map(([label,val]) => (
+              <div key={label} className="dati-cella">
+                <div className="dati-l">{label}</div>
+                <div className="dati-v">{val}</div>
               </div>
-            )}
+            ))}
           </div>
         </div>
       )}
@@ -382,80 +402,48 @@ export default function KitDetail({ kits, reload }) {
         </div>
       )}
 
-      {/* TAB: REVISIONI */}
-      {tab === "revisioni" && (
+      {/* PANNELLO: STORICO (revisioni + sostituzioni + spostamenti) */}
+      {tab === "storico" && (
         <div className="card">
           <div className="card-header">
-            <span className="card-title">Storico revisioni ({revisioni.length})</span>
+            <span className="storico-filtri">
+              {[["tutto","Tutto"],["revisione","Revisioni"],["sostituzione","Sostituzioni"],["spostamento","Spostamenti"]].map(([k,l]) => (
+                <button key={k} type="button" aria-pressed={filtroStorico===k}
+                  className={filtroStorico===k ? "vista-btn on" : "vista-btn"} onClick={() => setFiltroStorico(k)}>{l}</button>
+              ))}
+            </span>
             <button className="btn btn-success" style={{ fontSize:12, padding:"5px 14px" }} onClick={() => setModalRev(true)}>+ Aggiungi revisione</button>
           </div>
-          {revisioni.length === 0 ? (
-            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessuna revisione registrata</div>
+          {!storicoFiltrato.length ? (
+            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessun evento registrato</div>
           ) : (
             <div className="timeline" style={{ marginTop:8 }}>
-              {revisioni.map(r => (
-                <div key={r.id} className="timeline-item">
-                  <div className={`timeline-dot ${ESITO_COLOR[r.esito]||"gray"}`}/>
-                  <div className="timeline-date">{formatData(r.dataRevisione)}</div>
-                  <div className="timeline-title">{r.esito?.charAt(0).toUpperCase()+r.esito?.slice(1)||"—"}</div>
-                  <div className="timeline-sub">
-                    {r.tecnico && <span>{r.tecnico}</span>}
-                    {r.ente && <span> · {r.ente}</span>}
-                    {r.note && <span> — {r.note}</span>}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB: SOSTITUZIONI */}
-      {tab === "sostituzioni" && (
-        <div className="card">
-          <div className="card-header"><span className="card-title">Storico sostituzioni componenti ({storicoSost.length})</span></div>
-          {storicoSost.length === 0 ? (
-            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessuna sostituzione registrata</div>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Data</th><th>Componente uscente</th><th>Matr. Lucca</th><th>Destinazione</th><th>Componente entrante</th><th>Matr. Lucca</th><th>Note</th></tr></thead>
-                <tbody>
-                  {storicoSost.map(s => (
-                    <tr key={s.id}>
-                      <td style={{ whiteSpace:"nowrap" }}>{formatData(s.dataOperazione)}</td>
-                      <td><div style={{ fontWeight:600, fontSize:12 }}>{s.componenteUscente?.tipo}</div><div style={{ fontSize:11, color:"var(--text3)" }}>{s.componenteUscente?.modello}</div><div className="mono">{s.componenteUscente?.matricola}</div></td>
-                      <td><span style={{ fontFamily:"monospace", fontSize:12, background:"var(--gray-bg)", color:"var(--gray-text)", padding:"2px 8px", borderRadius:4 }}>{s.componenteUscente?.matricolaLucca||"—"}</span></td>
-                      <td>{s.componenteUscente?.destinazione && <span style={{ fontSize:11, fontWeight:700, padding:"3px 8px", borderRadius:10, ...DEST_COLOR[s.componenteUscente.destinazione] }}>{DEST_LABEL[s.componenteUscente.destinazione]}</span>}</td>
-                      <td><div style={{ fontWeight:600, fontSize:12 }}>{s.componenteEntrante?.tipo}</div><div style={{ fontSize:11, color:"var(--text3)" }}>{s.componenteEntrante?.modello}</div><div className="mono">{s.componenteEntrante?.matricola}</div></td>
-                      <td><span style={{ fontFamily:"monospace", fontWeight:800, fontSize:12, color:"var(--blue-text)", background:"var(--blue-bg)", padding:"2px 8px", borderRadius:4 }}>{s.componenteEntrante?.matricolaLucca||"—"}</span></td>
-                      <td style={{ fontSize:11, color:"var(--text3)" }}>{s.componenteUscente?.noteUscita||"—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* TAB: SPOSTAMENTI */}
-      {tab === "spostamenti" && (
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Storico spostamenti ({storicoSpost.length})</span>
-            <button className="btn btn-secondary" style={{ fontSize:12, padding:"5px 14px" }} onClick={() => setModalSpost(true)}>⇄ Sposta kit</button>
-          </div>
-          {storicoSpost.length === 0 ? (
-            <div style={{ color:"var(--text3)", fontSize:13, textAlign:"center", padding:30 }}>Nessuno spostamento registrato</div>
-          ) : (
-            <div className="timeline" style={{ marginTop:8 }}>
-              {storicoSpost.map(s => (
-                <div key={s.id} className="timeline-item">
-                  <div className="timeline-dot gray"/>
-                  <div className="timeline-date">{formatData(s.data)}</div>
-                  <div className="timeline-title">{s.dislocazionePrecedente} → {s.nuovaDislocazione}</div>
-                  <div className="timeline-sub">{s.mezzoPrecedente} → {s.nuovaTarga}{s.motivo?` — ${s.motivo}`:""}</div>
+              {storicoFiltrato.map(({ tipo, voce: v }) => (
+                <div key={tipo + v.id} className="timeline-item">
+                  {tipo === "revisione" && <>
+                    <div className={`timeline-dot ${ESITO_COLOR[v.esito]||"gray"}`}/>
+                    <div className="timeline-date"><span className="storico-tipo rev">Revisione</span> {formatData(v.dataRevisione)}</div>
+                    <div className="timeline-title">{v.esito ? v.esito.charAt(0).toUpperCase()+v.esito.slice(1) : "—"}</div>
+                    <div className="timeline-sub">{v.tecnico||""}{v.ente?` · ${v.ente}`:""}{v.note?` — ${v.note}`:""}</div>
+                  </>}
+                  {tipo === "sostituzione" && <>
+                    <div className="timeline-dot blue"/>
+                    <div className="timeline-date"><span className="storico-tipo sost">Sostituzione</span> {formatData(v.dataOperazione)}</div>
+                    <div className="timeline-title">
+                      {v.componenteUscente?.tipo} <span className="mono">{v.componenteUscente?.matricolaLucca||"—"}</span> → <span className="mono">{v.componenteEntrante?.matricolaLucca||"—"}</span>
+                    </div>
+                    <div className="timeline-sub">
+                      {v.componenteUscente?.destinazione && <span style={{ fontSize:11, fontWeight:700, padding:"1px 7px", borderRadius:10, background:DEST_COLOR[v.componenteUscente.destinazione]?.bg, color:DEST_COLOR[v.componenteUscente.destinazione]?.color }}>{DEST_LABEL[v.componenteUscente.destinazione]}</span>}
+                      {" "}{v.componenteUscente?.modello||""}{v.componenteUscente?.matricola?` (${v.componenteUscente.matricola})`:""} → {v.componenteEntrante?.modello||""}{v.componenteEntrante?.matricola?` (${v.componenteEntrante.matricola})`:""}
+                      {v.componenteUscente?.noteUscita ? ` — ${v.componenteUscente.noteUscita}` : ""}
+                    </div>
+                  </>}
+                  {tipo === "spostamento" && <>
+                    <div className="timeline-dot gray"/>
+                    <div className="timeline-date"><span className="storico-tipo spost">Spostamento</span> {formatData(v.data)}</div>
+                    <div className="timeline-title">{v.dislocazionePrecedente} → {v.nuovaDislocazione}</div>
+                    <div className="timeline-sub">{v.mezzoPrecedente} → {v.nuovaTarga}{v.motivo?` — ${v.motivo}`:""}</div>
+                  </>}
                 </div>
               ))}
             </div>
