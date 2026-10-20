@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { deleteGruppoTaglio, aggiungiRevisioneGT, getRevisioniGT, getManutenzioniGT, aggiungiManutenzioneGT, cambiaStatoComponenteGT, getStatiComponentiGT, getFotoComponenti } from "../firebase/service";
 import { calcolaStatoGT, statoLabel, prossimaRevisioneGT, formatData, giorniAllaScadenza, sistemaBadge, oggiIso, componenteAttivoGT, componentiNonOperativiGT, riepilogoFermiComponente } from "../utils";
 import { fotoDelComponente } from "../foto";
@@ -9,7 +9,9 @@ import FotoComponente from "../components/FotoComponente";
 import Cartellino from "../components/Cartellino";
 import MenuAzioni from "../components/MenuAzioni";
 import { unisciStorico } from "../storico";
+import { gestoriSwipe } from "../swipe";
 
+const TABS_GT = ["componenti", "dati", "storico", "documenti"];
 const TIPI_MANUTENZIONE = ["Cambio olio","Cambio candela","Cambio filtro","Controllo pressione","Pulizia","Altro"];
 
 // Motivi ricorrenti per cui un componente finisce in officina o fuori servizio.
@@ -139,48 +141,33 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
   ];
 
   return (
-    <div className={compAperto !== null ? "focus-comp" : undefined}>
-      {/* Barra azioni */}
+    <div className={compAperto !== null ? "focus-comp kit-pagina" : "kit-pagina"} {...(compAperto === null ? gestoriSwipe(TABS_GT, tab, setTab) : {})}>
+      {/* Una riga di azioni: il resto nel menu ⋯ */}
       <div className="kit-azioni">
-        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Gruppi da taglio</button>
+        <button className="btn btn-secondary" onClick={() => navigate("/")}>‹ Gruppi</button>
         <span style={{ flex:1 }}/>
         <button className="btn btn-success" onClick={() => setModalRev(true)}>+ Revisione</button>
-        <button className="btn btn-secondary" onClick={() => setModalMan(true)}>+ Manutenzione</button>
-        <Link to={`/gruppi-taglio/${gt.id}/modifica`} className="btn btn-secondary">Modifica</Link>
-        <MenuAzioni etichetta="⋯" voci={[{ label:"Elimina gruppo", onClick: handleDelete, danger:true }]}/>
+        <MenuAzioni etichetta="⋯" voci={[
+          { label:"+ Manutenzione", onClick: () => setModalMan(true) },
+          { label:"Modifica", onClick: () => navigate(`/gruppi-taglio/${gt.id}/modifica`) },
+          { label:"Elimina gruppo", onClick: handleDelete, danger:true },
+        ]}/>
       </div>
 
-      {/* Testata */}
+      {/* Testata compatta: chi è il gruppo + scadenza e componenti in una riga */}
       <div className="kit-hero">
         <Cartellino grande numero={gt.numero} targa={gt.mezzo}/>
         <div className="kit-hero-mid">
-          <h1 className="kit-hero-nome">{gt.nome}</h1>
-          <div className="kit-hero-sub">{gt.dislocazione || "—"} · {gt.marca || "—"} · {badge.label} · {comps.length} componenti</div>
-          <div className="kit-hero-chips">
+          <div className="kit-hero-riga">
+            <h1 className="kit-hero-nome">{gt.nome}</h1>
             <span className={`pill ${stato}`}>{statoLabel(stato)}</span>
-            {fermi.totale > 0 && <span className="pill attenzione">{fermi.totale === 1 ? "1 componente fermo" : `${fermi.totale} componenti fermi`}</span>}
           </div>
-        </div>
-      </div>
-
-      <div className="kit-kpis">
-        <div className="kit-kpi">
-          <div className="kit-kpi-l">Prossima revisione</div>
-          <div className="kit-kpi-v">{proxRev && proxRev !== "NO REVISIONE" ? formatData(proxRev) : proxRev || "—"}</div>
-          <div className="kit-kpi-s">{giorni === null ? "—" : giorni < 0 ? `scaduta da ${Math.abs(giorni)} giorni` : `fra ${giorni} giorni`}</div>
-        </div>
-        <div className="kit-kpi">
-          <div className="kit-kpi-l">Ultima manutenzione</div>
-          <div className="kit-kpi-v">{manutenzioni[0] ? formatData(manutenzioni[0].data) : "—"}</div>
-          <div className="kit-kpi-s">{manutenzioni[0]?.tipo || "nessuna registrata"}</div>
-        </div>
-        <div className="kit-kpi">
-          <div className="kit-kpi-l">Componenti</div>
-          <div className="kit-kpi-v">{comps.length - fermi.totale} / {comps.length}</div>
-          <div className="kit-kpi-s" style={fermi.totale ? { color:"var(--amber-text)", fontWeight:700 } : undefined}>
-            {fermi.totale
-              ? [fermi.inRevisione && `${fermi.inRevisione} in revisione`, fermi.fuoriServizio && `${fermi.fuoriServizio} fuori servizio`].filter(Boolean).join(" · ")
-              : "tutti operativi"}
+          <div className="kit-hero-sub">{gt.dislocazione || "—"} · {gt.marca || "—"} · {badge.label}</div>
+          <div className="kit-hero-strip">
+            Rev. {proxRev && proxRev !== "NO REVISIONE" ? formatData(proxRev) : proxRev || "—"}
+            {giorni !== null && <span className={giorni < 0 ? "neg" : giorni <= 90 ? "att" : undefined}> ({giorni < 0 ? `scaduta da ${Math.abs(giorni)} gg` : `fra ${giorni} gg`})</span>}
+            {" · "}{comps.length - fermi.totale}/{comps.length} comp.
+            {fermi.totale > 0 && <span className="neg"> · {fermi.totale === 1 ? "1 fermo" : `${fermi.totale} fermi`}</span>}
           </div>
         </div>
       </div>
@@ -199,20 +186,10 @@ export default function GruppiTaglioDetail({ gruppi, reload }) {
           </div>
         </div>
       )}
-      {fermi.totale > 0 && (
-        <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>
-          Kit incompleto — {fermi.inRevisione > 0 ? fermi.inRevisione + " in revisione" : ""}
-          {fermi.inRevisione > 0 && fermi.fuoriServizio > 0 ? " · " : ""}
-          {fermi.fuoriServizio > 0 ? fermi.fuoriServizio + " fuori servizio" : ""}
-          {" · vedi pannello Componenti"}
-        </div>
-      )}
-      {stato==="scaduto" && <div className="alert-banner" style={{ marginBottom:16 }}>Revisione scaduta da {Math.abs(giorni)} giorni</div>}
-      {stato==="critico" && <div className="alert-banner" style={{ background:"var(--amber-bg)", borderColor:"#fac775", color:"var(--amber-text)", marginBottom:16 }}>Revisione tra {giorni} giorni — pianifica</div>}
 
-      {/* Pannelli */}
+      {/* Pannelli: su telefono barra fissa in basso; swipe laterale per cambiare */}
       <div className="kit-tabs">
-        {[["componenti",`Componenti (${comps.length})`],["dati","Dati gruppo"],["storico",`Storico (${storico.length})`],["documenti","Documenti"]].map(([key, label]) => (
+        {[["componenti","Componenti"],["dati","Dati"],["storico","Storico"],["documenti","Documenti"]].map(([key, label]) => (
           <button key={key} type="button" aria-pressed={tab===key}
             className={tab===key ? "kit-tab on" : "kit-tab"} onClick={() => setTab(key)}>{label}</button>
         ))}
